@@ -693,18 +693,95 @@ async function apiRouter(req, res) {
   }
 
   // Webhook de voz entrante (Twilio / Vapi / Bland)
+  // Webhook Vapi — llamada entrante → colgar + enviar WhatsApp via Baileys
   if (path === '/api/llamada-entrante' && req.method === 'POST') {
     let body = ''
     req.on('data', d => body += d)
     req.on('end', async () => {
       try {
         const data = JSON.parse(body || '{}')
-        const telefono = data.From || data.from || data.caller || data.telefono || 'desconocido'
-        const transcripcion = data.transcription || data.transcript || null
-        await supabase.from('llamadas_voz').insert({ telefono, transcripcion, raw: JSON.stringify(data) })
-        res.writeHead(200, JSON_H); res.end(JSON.stringify({ ok: true }))
+
+        // ── 1. Respuesta inmediata a Vapi para terminar la llamada ──────────
+        // Vapi espera esta respuesta antes de continuar; colgar = costo mínimo
+        res.writeHead(200, JSON_H)
+        res.end(JSON.stringify({
+          results: [{ toolCallId: data?.message?.toolCallList?.[0]?.id || 'hangup', result: 'hangup' }]
+        }))
+
+        // ── 2. Extraer teléfono del payload de Vapi ─────────────────────────
+        // Vapi envía: message.call.customer.number  |  message.customer.number
+        // También soportamos formatos legacy (From, caller, telefono)
+        const rawNum =
+          data?.message?.call?.customer?.number ||
+          data?.message?.customer?.number       ||
+          data?.call?.customer?.number          ||
+          data?.From || data?.from || data?.caller || data?.telefono || ''
+
+        // Limpiar: quitar +, espacios, guiones → solo dígitos
+        const soloDigitos = rawNum.replace(/[^\d]/g, '')
+        if (!soloDigitos) {
+          console.log('[VAPI] No se pudo extraer teléfono del payload:', JSON.stringify(data).substring(0, 200))
+          return
+        }
+
+        // Construir JID válido para Baileys (sin @lid)
+        const jid = `${soloDigitos}@s.whatsapp.net`
+        console.log(`📞 [VAPI] Llamada de ${soloDigitos} → enviando WhatsApp`)
+
+        // ── 3. Upsert lead en Supabase ──────────────────────────────────────
+        const leadData = await upsertLead(soloDigitos, {
+          canal_origen: 'Llamada telefónica',
+          estado: 'Nuevo',
+          interes: 'Penthouse',
+        })
+        const leadId = leadData?.id
+        if (leadId) {
+          await log(leadId, 'Llamada Rescatada', 'Llamada telefónica vía Vapi — ficha técnica enviada por WhatsApp')
+        }
+
+        // ── 4. Enviar WhatsApp via Baileys ──────────────────────────────────
+        if (!sockActual || !WA_CONECTADO) {
+          console.log('[VAPI] ⚠️  WhatsApp no conectado — no se pudo enviar mensaje')
+          return
+        }
+
+        const FICHA = `¡Hola! 🏢 Gracias por tu interés en nuestro Penthouse Exclusivo en Cuernavaca (a 50m del Parque Chapultepec).
+
+Para darte una atención inmediata y que puedas revisar los detalles en alta definición, aquí tienes la información de la ÚLTIMA UNIDAD DISPONIBLE:
+
+💰 Precio Total: $4,500,000 MXN
+📐 Construcción: 336.83 m²
+📐 Área Privada: 117.45 m²
+🌿 Terraza: 85.74 m² de Roofgarden + JACUZZI INCLUIDO
+🛏️ Distribución: 3 Recámaras con baños completos y 3.5 baños totales
+🚗 Estacionamiento: 2 cajones techados
+🛗 Acceso: Elevador directo al departamento con vista panorámica
+
+📸 Ver Galería de Fotos y Ficha Técnica: https://parquechapultepecmorelos.com
+📱 Síguenos en Instagram: https://instagram.com/pchapultepec
+📅 ¿Te gustaría conocerlo? Agenda una visita personalizada directamente aquí para elegir tu horario: https://parquechapultepecmorelos.com
+
+Si lo prefieres, puedes responderme por este chat y te atenderé personalmente. ¡Quedamos a tus órdenes!`
+
+        await sockActual.sendMessage(jid, { text: FICHA })
+        if (leadId) await log(leadId, 'Mensaje Saliente Bot', FICHA)
+
+        // Enviar fotos del PH si no las ha recibido antes
+        const fotosEnviadas = leadId ? await yaEnvioFotos(leadId) : false
+        if (!fotosEnviadas) {
+          await new Promise(r => setTimeout(r, 2000))
+          const ok = await enviarSecuencia(sockActual, jid, 'ph')
+          if (ok && leadId) {
+            await log(leadId, 'Mensaje Saliente Bot', '[FOTOS PH]')
+            console.log(`📸 [VAPI] Fotos enviadas → ${soloDigitos}`)
+          }
+        }
+
+        console.log(`✅ [VAPI] Flujo completo → ${soloDigitos}`)
+
       } catch (e) {
-        res.writeHead(500, JSON_H); res.end(JSON.stringify({ error: e.message }))
+        console.error('[VAPI] Error:', e.message)
+        // res ya fue enviado arriba — no se puede volver a escribir
       }
     })
     return true
