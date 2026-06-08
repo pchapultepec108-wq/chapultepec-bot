@@ -600,8 +600,8 @@ Te mando las fotos ahora mismo 📸`
       await log(leadId, 'Mensaje Entrante', texto)
 
       // ── Helpers ────────────────────────────────────────────────────────
-      async function enviarFotos() {
-        if (fotosYaEnviadas) return  // nunca mandar fotos dos veces
+      async function enviarFotos(forzar = false) {
+        if (fotosYaEnviadas && !forzar) return
         await supabase.from('leads').update({ interes: 'Penthouse' }).eq('id', leadId)
         const ok = await enviarSecuencia(sock, jid, 'ph')
         if (ok) {
@@ -625,8 +625,17 @@ Te mando las fotos ahora mismo 📸`
         continue
       }
 
-      // ══ ETAPA 2: Ya recibió info y fotos → solo agendar ══════════════
+      // ══ ETAPA 2: Ya recibió info y fotos → responder ══════════════════
       if (fotosYaEnviadas) {
+        // Si pide fotos de nuevo → mandarlas
+        const pideFotosDeNuevo = /foto|imagen|ver|manda|env[íi]a|muestra|de nuevo|otra vez/i.test(texto)
+        if (pideFotosDeNuevo) {
+          await send(MSG_INFO_COMPLETA)
+          await new Promise(r => setTimeout(r, 1000))
+          await enviarFotos(true)
+          continue
+        }
+
         if (citaAgendada) {
           await send(MSG_RECORDATORIO_CITA)
           continue
