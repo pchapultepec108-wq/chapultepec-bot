@@ -636,8 +636,6 @@ Te mando las fotos ahora mismo 📸`
         await send(MSG_INFO_COMPLETA)
         await new Promise(r => setTimeout(r, 1500))
         await enviarFotos()
-        await new Promise(r => setTimeout(r, 2000))
-        await send(MSG_CONCERTAR_CITA)
         continue
       }
 
@@ -802,10 +800,6 @@ async function apiRouter(req, res) {
           }
         }
 
-        // Mensaje final para concertar cita
-        await new Promise(r => setTimeout(r, 2500))
-        await sockActual.sendMessage(jid, { text: MSG_CONCERTAR_CITA })
-        if (leadId) await log(leadId, 'Mensaje Saliente Bot', MSG_CONCERTAR_CITA)
 
         console.log(`✅ [VAPI] Flujo completo → ${soloDigitos}`)
 
@@ -1103,8 +1097,6 @@ async function apiRouter(req, res) {
         await sockActual.sendMessage(jid, { text: MSG_INFO_COMPLETA })
         await new Promise(r => setTimeout(r, 1500))
         await enviarSecuencia(sockActual, jid, 'ph')
-        await new Promise(r => setTimeout(r, 2000))
-        await sockActual.sendMessage(jid, { text: MSG_CONCERTAR_CITA })
         console.log(`📤 [TEST] Fotos enviadas → ${soloDigitos}`)
       } catch (e) {
         console.error('[TEST]', e.message)
