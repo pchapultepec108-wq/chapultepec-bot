@@ -626,51 +626,32 @@ Te mando las fotos ahora mismo 📸`
       }
       // ───────────────────────────────────────────────────────────────────
 
-      // ══ ETAPA 1: Primer contacto → fotos directo (caption tiene todos los datos) ═
-      if (esPrimerMensaje || !fotosYaEnviadas) {
-        await enviarFotos()
+      // ── Detectar rechazo explícito ────────────────────────────────────────
+      const rechaza = /no (me )?interesa|no gracias|ya no|ya tengo|no por ahora|no quiero/i.test(texto)
+      if (rechaza) {
+        await send(`Entendido, sin problema 🙏 Si en algún momento quieres retomar, aquí estaré. ¡Buen día!`)
+        await supabase.from('leads').update({ estado: 'No Interesado' }).eq('id', leadId)
         continue
       }
 
-      // ══ ETAPA 2: Ya recibió info y fotos → responder ══════════════════
-      if (fotosYaEnviadas) {
-        // Si pide fotos de nuevo → mandarlas
-        const pideFotosDeNuevo = /foto|imagen|ver|manda|env[íi]a|muestra|de nuevo|otra vez/i.test(texto)
-        if (pideFotosDeNuevo) {
-          await enviarFotos(true)
-          continue
-        }
-
-        if (citaAgendada) {
-          await send(MSG_RECORDATORIO_CITA)
-          continue
-        }
-
-        // Detectar día/hora → confirmar cita
-        const confirmaDia = /lunes|martes|mi[eé]rcoles|jueves|viernes|s[aá]bado|domingo|ma[ñn]ana|pasado|esta semana|pr[oó]ximo|hoy|\b\d{1,2}(:\d{2})?\s*(am|pm|hrs?)/i.test(texto)
-        if (confirmaDia) {
-          await send(MSG_CONFIRMAR_CITA)
-          await supabase.from('leads').update({ estado: 'Cita Agendada', fecha_cita: new Date().toISOString() }).eq('id', leadId)
-          continue
-        }
-
-        // Detectar rechazo
-        const rechaza = /no (me )?interesa|no gracias|ya no|ya tengo|no por ahora|no quiero/i.test(texto)
-        if (rechaza) {
-          await send(`Entendido, sin problema 🙏 Si en algún momento quieres retomar, aquí estaré. ¡Buen día!`)
-          await supabase.from('leads').update({ estado: 'No Interesado' }).eq('id', leadId)
-          continue
-        }
-
-        // Cualquier otro mensaje → IA responde naturalmente
-        let respIA
-        try { respIA = USA_IA ? await respuestaIA(leadId, texto) : respuestaReglas(texto) }
-        catch { respIA = respuestaReglas(texto) }
-        await send(respIA)
+      // ── Detectar día/hora → confirmar cita ───────────────────────────────
+      const confirmaDia = /lunes|martes|mi[eé]rcoles|jueves|viernes|s[aá]bado|domingo|ma[ñn]ana|pasado|esta semana|pr[oó]ximo|hoy|\b\d{1,2}(:\d{2})?\s*(am|pm|hrs?)/i.test(texto)
+      if (confirmaDia) {
+        await send(MSG_CONFIRMAR_CITA)
+        await supabase.from('leads').update({ estado: 'Cita Agendada', fecha_cita: new Date().toISOString() }).eq('id', leadId)
         continue
       }
 
-      // Fallback
+      // ── Recordatorio si ya tiene cita agendada ───────────────────────────
+      if (citaAgendada) {
+        await send(MSG_RECORDATORIO_CITA)
+        continue
+      }
+
+      // ── Cualquier otro mensaje → siempre manda info + fotos ──────────────
+      await enviarFotos(true)
+
+      // Fallback (no se usa — kept para evitar errores en código posterior)
       let respuesta
       try { respuesta = USA_IA ? await respuestaIA(leadId, texto) : respuestaReglas(texto) }
       catch { respuesta = respuestaReglas(texto) }
