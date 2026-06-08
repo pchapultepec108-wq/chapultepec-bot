@@ -1,0 +1,1581 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Chapultepec · CRM</title>
+<style>
+/* ── RESET & BASE ────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:      #F8FAFC;
+  --surface: #FFFFFF;
+  --border:  #E2E8F0;
+  --border2: #F1F5F9;
+  --tx1:     #0F172A;
+  --tx2:     #475569;
+  --tx3:     #94A3B8;
+  --shadow:  0 1px 3px rgba(15,23,42,.07), 0 1px 2px rgba(15,23,42,.04);
+  --shadow2: 0 4px 12px rgba(15,23,42,.09), 0 2px 4px rgba(15,23,42,.05);
+  --r:       10px;
+  --rb:      6px;
+  /* paleta vívida — rojo, azul, amarillo como primarios */
+  --green:   #16A34A; --green-bg: #F0FDF4; --green-bd: #86EFAC;
+  --blue:    #1D4ED8; --blue-bg:  #DBEAFE; --blue-bd:  #93C5FD;
+  --orange:  #D97706; --orange-bg:#FFFBEB; --orange-bd:#FCD34D;
+  --purple:  #7C3AED; --purple-bg:#F5F3FF; --purple-bd:#C4B5FD;
+  --red:     #DC2626; --red-bg:   #FEF2F2; --red-bd:   #FECACA;
+  --yellow:  #CA8A04; --yellow-bg:#FEFCE8; --yellow-bd:#FDE047;
+}
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--tx1);
+  font-size: 13px;
+  line-height: 1.5;
+  display: flex;
+  min-height: 100vh;
+}
+
+/* ── SIDEBAR ─────────────────────────────────────── */
+.sidebar {
+  width: 220px;
+  min-height: 100vh;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  z-index: 50;
+  box-shadow: 1px 0 0 var(--border);
+}
+.sb-logo {
+  padding: 20px 18px 16px;
+  border-bottom: 1px solid var(--border2);
+}
+.sb-brand { font-size: 15px; font-weight: 800; color: var(--tx1); letter-spacing: -.3px; }
+.sb-brand em { color: var(--red); font-style: normal; }
+.sb-sub { font-size: 10px; color: var(--tx3); font-weight: 500; margin-top: 1px; text-transform: uppercase; letter-spacing: .08em; }
+.sb-status {
+  margin: 12px 18px;
+  padding: 8px 12px;
+  background: var(--green-bg);
+  border: 1px solid var(--green-bd);
+  border-radius: var(--rb);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sb-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--blue); animation: pulse 2s infinite; flex-shrink: 0; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+.sb-status-text { font-size: 11px; color: var(--blue); font-weight: 600; line-height: 1.3; }
+.sb-status-text span { display: block; font-weight: 400; color: #60A5FA; font-size: 10px; }
+
+.sb-nav { padding: 8px 10px; flex: 1; }
+.sb-section { font-size: 9px; font-weight: 700; color: var(--tx3); text-transform: uppercase; letter-spacing: .1em; padding: 10px 8px 4px; }
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: var(--rb);
+  cursor: pointer;
+  color: var(--tx2);
+  font-size: 13px;
+  font-weight: 500;
+  transition: background .12s, color .12s;
+  margin-bottom: 1px;
+}
+.nav-item:hover { background: var(--bg); color: var(--tx1); }
+.nav-item.on { background: var(--blue-bg); color: var(--blue); font-weight: 600; }
+.nav-item.on .nav-icon { color: var(--blue); }
+.nav-icon { font-size: 15px; width: 20px; text-align: center; flex-shrink: 0; }
+.nav-badge {
+  margin-left: auto;
+  background: var(--orange);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 800;
+  border-radius: 99px;
+  padding: 1px 6px;
+  min-width: 16px;
+  text-align: center;
+}
+
+.sb-footer {
+  padding: 12px 18px;
+  border-top: 1px solid var(--border2);
+}
+.sb-refresh {
+  width: 100%;
+  padding: 7px;
+  border: 1px solid var(--border);
+  border-radius: var(--rb);
+  background: var(--surface);
+  color: var(--tx2);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: background .12s;
+}
+.sb-refresh:hover { background: var(--bg); }
+.sb-time { font-size: 10px; color: var(--tx3); text-align: center; margin-top: 6px; }
+
+/* ── MAIN ────────────────────────────────────────── */
+.main {
+  margin-left: 220px;
+  flex: 1;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+.topbar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 28px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 40;
+}
+.page-title { font-size: 15px; font-weight: 700; color: var(--tx1); letter-spacing: -.2px; }
+.page-sub { font-size: 11px; color: var(--tx3); margin-top: 1px; }
+.topbar-r { display: flex; align-items: center; gap: 10px; }
+.chip {
+  padding: 4px 10px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid;
+}
+.chip-green { background: var(--green-bg); color: var(--green); border-color: var(--green-bd); }
+.chip-blue  { background: var(--blue-bg);  color: var(--blue);  border-color: var(--blue-bd); }
+.chip-orange{ background: var(--orange-bg);color: var(--orange);border-color: var(--orange-bd); }
+
+.content { padding: 24px 28px; flex: 1; }
+.page { display: none; }
+.page.on { display: block; }
+
+/* ── METRIC CARDS ────────────────────────────────── */
+.metrics { display: grid; gap: 12px; margin-bottom: 20px; }
+.m4 { grid-template-columns: repeat(4,1fr); }
+.m6 { grid-template-columns: repeat(6,1fr); }
+.metric {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 16px 18px;
+  box-shadow: var(--shadow);
+  position: relative;
+  overflow: hidden;
+}
+.metric::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  border-radius: var(--r) var(--r) 0 0;
+}
+.m-green::after  { background: linear-gradient(90deg, var(--green), #4ADE80); }
+.m-blue::after   { background: linear-gradient(90deg, var(--blue), #60A5FA); }
+.m-orange::after { background: linear-gradient(90deg, var(--orange), #FB923C); }
+.m-purple::after { background: linear-gradient(90deg, var(--purple), #A78BFA); }
+.m-red::after    { background: linear-gradient(90deg, var(--red), #F87171); }
+.m-num { font-size: 30px; font-weight: 800; line-height: 1; margin-bottom: 4px; letter-spacing: -1px; }
+.m-lbl { font-size: 10px; font-weight: 600; color: var(--tx3); text-transform: uppercase; letter-spacing: .07em; }
+.m-green  .m-num { color: var(--green); }
+.m-blue   .m-num { color: var(--blue); }
+.m-orange .m-num { color: var(--orange); }
+.m-purple .m-num { color: var(--purple); }
+.m-red    .m-num { color: var(--red); }
+
+/* ── CARDS / SECTIONS ────────────────────────────── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  box-shadow: var(--shadow);
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+.card-head {
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--border2);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #FAFBFC;
+}
+.card-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--tx2);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.card-title-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.dot-green  { background: var(--green); }
+.dot-blue   { background: var(--blue); }
+.dot-orange { background: var(--orange); }
+.dot-purple { background: var(--purple); }
+.dot-red    { background: var(--red); }
+.dot-yellow { background: var(--yellow); }
+
+/* ── TABLES ──────────────────────────────────────── */
+table { width: 100%; border-collapse: collapse; }
+thead th {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--tx3);
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--border);
+  background: #FAFBFC;
+  text-align: left;
+  white-space: nowrap;
+}
+tbody td {
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--border2);
+  color: var(--tx2);
+  font-size: 12px;
+  vertical-align: middle;
+}
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover td { background: #FAFBFC; }
+.lnk { color: var(--blue); cursor: pointer; font-weight: 600; }
+.lnk:hover { text-decoration: underline; }
+
+/* ── TAGS / BADGES ───────────────────────────────── */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+.t-nu  { background: var(--blue-bg);   color: #1D4ED8; border-color: var(--blue-bd); }
+.t-co  { background: var(--orange-bg); color: #9A3412; border-color: var(--orange-bd); }
+.t-ci  { background: var(--green-bg);  color: #15803D; border-color: var(--green-bd); }
+.t-ni  { background: var(--bg);        color: var(--tx3); border-color: var(--border); }
+.t-ca  { background: var(--purple-bg); color: #6D28D9; border-color: var(--purple-bd); }
+.t-wa  { background: var(--green-bg);  color: #15803D; border-color: var(--green-bd); }
+.t-ll  { background: var(--orange-bg); color: #9A3412; border-color: var(--orange-bd); }
+.t-ig  { background: var(--purple-bg); color: #6D28D9; border-color: var(--purple-bd); }
+.t-tt  { background: var(--blue-bg);   color: #1E40AF; border-color: var(--blue-bd); }
+.t-ph  { background: #FFFBEB; color: #92400E; border-color: #FDE68A; }
+.t-dp  { background: var(--green-bg);  color: #15803D; border-color: var(--green-bd); }
+.t-nd  { background: var(--bg);        color: var(--tx3); border-color: var(--border); }
+.t-pub { background: var(--green-bg);  color: #15803D; border-color: var(--green-bd); }
+.t-pnd { background: var(--orange-bg); color: #9A3412; border-color: var(--orange-bd); }
+
+/* ── TIMELINE ────────────────────────────────────── */
+.tl-item {
+  display: flex;
+  gap: 12px;
+  padding: 10px 18px;
+  border-bottom: 1px solid var(--border2);
+  align-items: flex-start;
+  transition: background .1s;
+}
+.tl-item:last-child { border-bottom: none; }
+.tl-item:hover { background: #FAFBFC; }
+.tl-ic {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.tl-ic-msg  { background: var(--blue-bg); }
+.tl-ic-bot  { background: var(--green-bg); }
+.tl-ic-call { background: var(--orange-bg); }
+.tl-ic-star { background: var(--purple-bg); }
+.tl-body { flex: 1; min-width: 0; }
+.tl-text {
+  font-size: 12px;
+  color: var(--tx1);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tl-meta { font-size: 10px; color: var(--tx3); margin-top: 2px; }
+
+/* ── BAR CHART ───────────────────────────────────── */
+.bar-row { margin-bottom: 14px; }
+.bar-row:last-child { margin-bottom: 0; }
+.bar-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  margin-bottom: 5px;
+}
+.bar-track { background: var(--border2); border-radius: 4px; height: 8px; }
+.bar-fill  { height: 100%; border-radius: 4px; transition: width .5s ease; }
+
+/* ── POSTS ────────────────────────────────────────── */
+.post-item {
+  display: flex;
+  gap: 14px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border2);
+  align-items: flex-start;
+}
+.post-item:last-child { border-bottom: none; }
+.post-img {
+  width: 60px; height: 60px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.post-ph {
+  width: 60px; height: 60px;
+  background: var(--border2);
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+}
+.post-body { flex: 1; min-width: 0; }
+.post-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 5px;
+  flex-wrap: wrap;
+}
+.post-text {
+  font-size: 12px;
+  color: var(--tx1);
+  line-height: 1.55;
+  margin-bottom: 6px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.post-text-full { -webkit-line-clamp: unset; overflow: visible; }
+.post-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 5px; }
+.htag {
+  background: var(--purple-bg);
+  color: var(--purple);
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 4px;
+  border: 1px solid var(--purple-bd);
+}
+.post-time { font-size: 10px; color: var(--tx3); }
+
+/* ── SECTION DIVIDERS ────────────────────────────── */
+.sec-divider {
+  padding: 8px 18px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  border-bottom: 1px solid var(--border2);
+}
+.sd-green  { background: var(--green-bg);  color: #15803D; border-top: 2px solid var(--green); }
+.sd-orange { background: var(--orange-bg); color: #9A3412; border-top: 2px solid var(--orange); }
+
+/* ── BUTTONS ─────────────────────────────────────── */
+.btn {
+  padding: 6px 14px;
+  border-radius: var(--rb);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--tx2);
+  transition: background .12s, box-shadow .12s;
+  white-space: nowrap;
+}
+.btn:hover { background: var(--bg); box-shadow: var(--shadow); }
+.btn-primary {
+  background: var(--blue);
+  color: #fff;
+  border-color: var(--blue);
+}
+.btn-primary:hover { background: #1D4ED8; }
+.btn-sm { padding: 4px 10px; font-size: 10px; }
+
+/* ── SELECTS ─────────────────────────────────────── */
+.sel {
+  border: 1px solid var(--border);
+  border-radius: var(--rb);
+  padding: 5px 10px;
+  font-size: 12px;
+  background: var(--surface);
+  color: var(--tx1);
+  cursor: pointer;
+}
+.sel:focus { outline: none; border-color: var(--blue); }
+
+/* ── ALERT BOX ───────────────────────────────────── */
+.alert-box {
+  border-radius: var(--r);
+  padding: 16px 18px;
+  margin: 16px 18px;
+  font-size: 12px;
+  line-height: 1.7;
+  border: 1px solid;
+}
+.alert-yellow { background: #FFFBEB; border-color: #FDE68A; color: #78350F; }
+.alert-green  { background: var(--green-bg); border-color: var(--green-bd); color: #14532D; }
+
+/* ── EXEC SUMMARY ────────────────────────────────── */
+.exec {
+  padding: 18px 20px;
+  background: #FFFBEB;
+  border-bottom: 1px solid #FDE68A;
+  font-size: 13px;
+  color: var(--tx1);
+  line-height: 1.9;
+}
+
+/* ── MODAL ───────────────────────────────────────── */
+.modal {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(15,23,42,.45);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(2px);
+}
+.modal.open { display: flex; }
+.mbox {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  width: 600px;
+  max-height: 82vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(15,23,42,.18);
+}
+.mh {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border2);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  font-weight: 700;
+}
+.mc {
+  background: none; border: none;
+  color: var(--tx3); font-size: 22px;
+  cursor: pointer; line-height: 1;
+}
+.mc:hover { color: var(--tx1); }
+.mb { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 8px; }
+.bbl { max-width: 82%; padding: 10px 13px; border-radius: 10px; font-size: 12px; line-height: 1.55; }
+.b-bot { background: var(--green-bg); border: 1px solid var(--green-bd); margin-right: auto; }
+.b-cli { background: var(--blue-bg);  border: 1px solid var(--blue-bd);  margin-left: auto; }
+.b-nm  { font-size: 9px; font-weight: 700; color: var(--green); margin-bottom: 3px; }
+.b-tx  { color: var(--tx1); white-space: pre-wrap; word-break: break-word; }
+.b-ts  { font-size: 9px; color: var(--tx3); margin-top: 3px; text-align: right; }
+
+/* ── GRID HELPERS ────────────────────────────────── */
+.g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.g3l { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 16px; }
+.empty { padding: 32px; text-align: center; color: var(--tx3); font-size: 12px; }
+
+/* ── VAPI BOX ────────────────────────────────────── */
+.vapi-box {
+  background: var(--green-bg);
+  border: 1px solid var(--green-bd);
+  border-radius: var(--r);
+  padding: 18px;
+  margin: 16px;
+}
+.vapi-box h4 { color: #14532D; font-size: 13px; margin-bottom: 8px; }
+.vapi-box p  { font-size: 12px; color: #166534; line-height: 1.6; }
+.vapi-code {
+  background: #DCFCE7; border: 1px solid var(--green-bd);
+  border-radius: 6px; padding: 8px 12px;
+  font-family: monospace; font-size: 11px; color: #14532D;
+  display: block; margin-top: 10px;
+}
+
+/* ── KANBAN ──────────────────────────────────── */
+.kanban-wrap { display:flex; gap:16px; padding:20px; overflow-x:auto; height:calc(100vh - 140px); align-items:flex-start; }
+.kanban-col { flex:0 0 300px; background:var(--bg); border-radius:12px; border:1px solid var(--border); display:flex; flex-direction:column; max-height:100%; }
+.kanban-col-head { padding:14px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; border-radius:12px 12px 0 0; }
+.kanban-col-title { font-size:13px; font-weight:700; color:var(--tx1); display:flex; align-items:center; gap:8px; }
+.kanban-col-dot { width:10px; height:10px; border-radius:50%; }
+.kanban-col-meta { font-size:11px; color:var(--tx3); }
+.kanban-col-valor { font-size:11px; font-weight:700; }
+.kanban-cards { flex:1; overflow-y:auto; padding:10px; display:flex; flex-direction:column; gap:8px; min-height:120px; }
+.kanban-cards.drag-over { background:rgba(37,99,235,.06); border-radius:8px; }
+.deal-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:13px; cursor:grab; transition:box-shadow .15s, transform .15s; user-select:none; }
+.deal-card:active { cursor:grabbing; }
+.deal-card.dragging { opacity:.5; transform:rotate(2deg); box-shadow:0 8px 24px rgba(0,0,0,.15); }
+.deal-card-name { font-size:13px; font-weight:700; color:var(--tx1); margin-bottom:4px; }
+.deal-card-tel { font-size:11px; color:var(--tx3); font-family:monospace; margin-bottom:8px; }
+.deal-card-valor { font-size:14px; font-weight:800; color:var(--blue); }
+.deal-card-footer { display:flex; align-items:center; justify-content:space-between; margin-top:8px; }
+.deal-card-dias { font-size:10px; color:var(--tx3); }
+.alerta-inactividad { background:var(--red); color:#fff; font-size:10px; font-weight:700; padding:3px 8px; border-radius:20px; animation:pulseRed 1.5s infinite; }
+@keyframes pulseRed { 0%,100%{opacity:1} 50%{opacity:.6} }
+.deal-card-wa { background:#25D366; color:#fff; border:none; border-radius:6px; padding:4px 10px; font-size:11px; font-weight:700; cursor:pointer; text-decoration:none; }
+.kanban-empty { text-align:center; color:var(--tx3); font-size:12px; padding:24px 0; }
+.kanban-header { padding:16px 20px 0; display:flex; align-items:center; justify-content:space-between; }
+.kanban-total { font-size:12px; color:var(--tx2); }
+</style>
+</head>
+<body>
+
+<!-- ══ SIDEBAR ══════════════════════════════════════ -->
+<aside class="sidebar">
+  <div class="sb-logo">
+    <div class="sb-brand">Parque <em>Chapultepec</em></div>
+    <div class="sb-sub">CRM · Cuernavaca</div>
+  </div>
+
+  <div class="sb-status">
+    <div class="sb-dot"></div>
+    <div class="sb-status-text">Ana activa
+      <span>777 175 84 12 · 24/7</span>
+    </div>
+  </div>
+
+  <nav class="sb-nav">
+    <div class="sb-section">Principal</div>
+    <div class="nav-item on" onclick="nav('resumen',this)">
+      <span class="nav-icon">📊</span> Resumen
+    </div>
+    <div class="nav-item" onclick="nav('kanban',this)">
+      <span class="nav-icon">🗂</span> Pipeline
+      <span class="nav-badge" id="nb-alertas" style="display:none;background:var(--red)">0</span>
+    </div>
+    <div class="nav-item" onclick="nav('contactos',this)">
+      <span class="nav-icon">👥</span> Contactos
+    </div>
+    <div class="nav-item" onclick="nav('mensajes',this)">
+      <span class="nav-icon">💬</span> Mensajes
+      <span class="nav-badge" id="nb-msgs" style="display:none">0</span>
+    </div>
+    <div class="nav-item" onclick="nav('llamadas',this)">
+      <span class="nav-icon">📞</span> Llamadas
+    </div>
+
+    <div class="sb-section" style="margin-top:8px">Marketing</div>
+    <div class="nav-item" onclick="nav('redes',this)">
+      <span class="nav-icon">📱</span> Redes · Buffer
+    </div>
+
+    <div class="sb-section" style="margin-top:8px">Análisis</div>
+    <div class="nav-item" onclick="nav('reporte',this)">
+      <span class="nav-icon">📈</span> Reporte 24h
+    </div>
+    <div class="nav-item" onclick="nav('agente',this)">
+      <span class="nav-icon">🤖</span> Agente
+    </div>
+  </nav>
+
+  <div class="sb-footer">
+    <button class="sb-refresh" onclick="cargar();cargarBuffer()">
+      <span>↻</span> Actualizar datos
+    </button>
+    <div class="sb-time" id="r-hora">—</div>
+  </div>
+</aside>
+
+<!-- ══ MAIN ═════════════════════════════════════════ -->
+<div class="main">
+
+  <!-- Top bar -->
+  <header class="topbar">
+    <div>
+      <div class="page-title" id="tb-title">Resumen General</div>
+    </div>
+    <div class="topbar-r">
+      <span class="chip chip-green" id="tb-agent">🟢 Bot activo</span>
+      <span class="chip chip-blue"  id="tb-buf">📱 Buffer —</span>
+      <span class="chip chip-orange" id="tb-sinresp" style="display:none">⚠️ Sin respuesta</span>
+    </div>
+  </header>
+
+  <div class="content">
+
+  <!-- ══ KANBAN PIPELINE ══════════════════════════ -->
+  <div id="pg-kanban" class="page">
+    <div class="kanban-header">
+      <div>
+        <h2 style="font-size:18px;font-weight:800;color:var(--tx1)">Pipeline de Ventas</h2>
+        <div class="kanban-total" id="kanban-total">Cargando...</div>
+      </div>
+      <button class="btn" onclick="cargarDeals()" style="font-size:12px">↻ Actualizar</button>
+    </div>
+    <div class="kanban-wrap" id="kanban-wrap">
+      <!-- columnas generadas por JS -->
+    </div>
+  </div>
+
+  <!-- ══ RESUMEN ══════════════════════════ -->
+  <div id="pg-resumen" class="page on">
+    <div class="metrics m4">
+      <div class="metric m-blue">
+        <div class="m-num" id="r-leads">—</div>
+        <div class="m-lbl">Leads totales</div>
+      </div>
+      <div class="metric m-red">
+        <div class="m-num" id="r-mensajes">—</div>
+        <div class="m-lbl">Mensajes hoy</div>
+      </div>
+      <div class="metric m-orange">
+        <div class="m-num" id="r-llamadas">—</div>
+        <div class="m-lbl">Llamadas hoy</div>
+      </div>
+      <div class="metric m-red">
+        <div class="m-num" id="r-citas">—</div>
+        <div class="m-lbl">Citas agendadas</div>
+      </div>
+    </div>
+
+    <div class="g3l">
+      <!-- Timeline -->
+      <div class="card">
+        <div class="card-head">
+          <span class="card-title"><span class="card-title-dot dot-purple"></span>Actividad del día — Log en tiempo real</span>
+        </div>
+        <div id="r-timeline"></div>
+      </div>
+      <!-- Interés -->
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-head">
+          <span class="card-title"><span class="card-title-dot dot-green"></span>Interés por propiedad</span>
+        </div>
+        <div style="padding:18px" id="r-interes"></div>
+      </div>
+    </div>
+
+    <!-- Posts Buffer -->
+    <div class="card">
+      <div class="card-head">
+        <span class="card-title"><span class="card-title-dot dot-purple"></span>📱 Publicaciones en redes — Buffer</span>
+        <button class="btn btn-sm" onclick="cargarBuffer()">↻ Sincronizar</button>
+      </div>
+      <div id="r-buffer"><div class="empty">Cargando Buffer…</div></div>
+    </div>
+  </div>
+
+  <!-- ══ CONTACTOS ══════════════════════════ -->
+  <div id="pg-contactos" class="page">
+    <div class="card">
+      <div class="card-head">
+        <span class="card-title"><span class="card-title-dot dot-blue"></span>Leads · <span id="c-total" style="color:var(--blue);font-weight:700">0</span></span>
+        <select class="sel" id="c-filtro" onchange="filtrar()">
+          <option value="">Todos los estados</option>
+          <option>Nuevo</option><option>En Conversación</option>
+          <option>Cita Agendada</option><option>Calificado</option><option>No Interesado</option>
+        </select>
+      </div>
+      <table>
+        <thead><tr><th>Teléfono</th><th>Interés</th><th>Canal origen</th><th>Estado</th><th>Último contacto</th><th>Msgs</th><th></th></tr></thead>
+        <tbody id="c-tabla"><tr><td colspan="7" class="empty">Cargando…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ══ MENSAJES ══════════════════════════ -->
+  <div id="pg-mensajes" class="page">
+    <div class="metrics m4">
+      <div class="metric m-blue">  <div class="m-num" id="m-entrantes">—</div><div class="m-lbl">Mensajes entrantes</div></div>
+      <div class="metric m-green"> <div class="m-num" id="m-respondidos">—</div><div class="m-lbl">Respondidos por bot</div></div>
+      <div class="metric m-purple"><div class="m-num" id="m-hoy">—</div><div class="m-lbl">Conversaciones hoy</div></div>
+      <div class="metric m-orange"><div class="m-num" id="m-tasa">—</div><div class="m-lbl">Tasa de respuesta</div></div>
+    </div>
+    <div class="card">
+      <div class="card-head">
+        <span class="card-title"><span class="card-title-dot dot-blue"></span>Central de conversaciones</span>
+        <select class="sel" id="m-canal" onchange="filtrarMsgs()">
+          <option value="">Todos los canales</option>
+          <option>WhatsApp</option><option>Instagram</option><option>Facebook</option>
+        </select>
+      </div>
+      <table>
+        <thead><tr><th>Contacto</th><th>Canal</th><th>Último mensaje</th><th>Fecha</th><th>Total</th><th>Estado</th><th></th></tr></thead>
+        <tbody id="m-tabla"><tr><td colspan="7" class="empty">Cargando…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ══ LLAMADAS ══════════════════════════ -->
+  <div id="pg-llamadas" class="page">
+    <div class="metrics m4">
+      <div class="metric m-red">   <div class="m-num" id="ll-total">—</div><div class="m-lbl">Llamadas totales</div></div>
+      <div class="metric m-orange"><div class="m-num" id="ll-hoy">—</div><div class="m-lbl">Hoy</div></div>
+      <div class="metric m-blue">  <div class="m-num" id="ll-semana">—</div><div class="m-lbl">Esta semana</div></div>
+      <div class="metric m-green"> <div class="m-num" id="ll-conv">—</div><div class="m-lbl">Respondieron WA</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <span class="card-title"><span class="card-title-dot dot-orange"></span>Registro detallado de llamadas interceptadas</span>
+      </div>
+      <table>
+        <thead><tr><th>Teléfono</th><th>Fecha y hora</th><th>Acción del bot</th><th>¿Respondió?</th><th>Interés</th><th>Acción</th></tr></thead>
+        <tbody id="ll-tabla"><tr><td colspan="6" class="empty">Cargando…</td></tr></tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <span class="card-title"><span class="card-title-dot dot-green"></span>Llamadas de voz con transcripción — Vapi / Twilio</span>
+      </div>
+      <table>
+        <thead><tr><th>Teléfono</th><th>Fecha</th><th>Transcripción (IA)</th></tr></thead>
+        <tbody id="voz-tabla"><tr><td colspan="3" class="empty">Sin llamadas de voz — activa el webhook para empezar</td></tr></tbody>
+      </table>
+      <div class="vapi-box">
+        <h4>📞 Webhook listo — configura tu número de Twilio o Vapi</h4>
+        <p>El endpoint ya está activo en el servidor Node.js. Apunta el webhook de llamada entrante a esta URL y las transcripciones aparecerán automáticamente aquí.</p>
+        <code class="vapi-code">POST http://TU-IP:3001/api/llamada-entrante — Body: { "From": "+521...", "transcript": "..." }</code>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ REDES / BUFFER ══════════════════════════ -->
+  <div id="pg-redes" class="page">
+    <div class="metrics m4">
+      <div class="metric m-red">   <div class="m-num" id="buf-pub">—</div><div class="m-lbl">Publicados</div></div>
+      <div class="metric m-blue">  <div class="m-num" id="buf-pend">—</div><div class="m-lbl">Programados</div></div>
+      <div class="metric m-orange"><div class="m-num" id="buf-ig">—</div><div class="m-lbl">Instagram</div></div>
+      <div class="metric m-red">   <div class="m-num" id="buf-tt">—</div><div class="m-lbl">TikTok</div></div>
+    </div>
+
+    <!-- Posts generados hoy por IA -->
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-head">
+        <span class="card-title"><span class="card-title-dot dot-red"></span>🤖 Posts de hoy generados con IA</span>
+        <button class="btn" onclick="cargarPostsHoy()">↻ Generar hoy</button>
+      </div>
+      <div id="posts-hoy-lista"><div class="empty">Ejecuta: <code>node publicar-diario.mjs</code> en Terminal</div></div>
+    </div>
+
+    <!-- Buffer histórico -->
+    <div class="card">
+      <div class="card-head">
+        <span class="card-title"><span class="card-title-dot dot-blue"></span>Historial · Buffer API</span>
+        <button class="btn" onclick="cargarBuffer()">↻ Sincronizar</button>
+      </div>
+      <div id="buf-lista"><div class="empty">Cargando…</div></div>
+    </div>
+  </div>
+
+  <!-- ══ REPORTE ══════════════════════════ -->
+  <div id="pg-reporte" class="page">
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-head">
+        <span class="card-title"><span class="card-title-dot dot-orange"></span>📋 Resumen ejecutivo · <span id="rep-fecha" style="font-weight:400;color:var(--tx3)"></span></span>
+        <button class="btn" onclick="renderReporte()">↻ Actualizar</button>
+      </div>
+      <div class="exec" id="rep-exec">Calculando…</div>
+    </div>
+
+    <div class="metrics m6">
+      <div class="metric m-blue">  <div class="m-num" id="rep-e">—</div><div class="m-lbl">Mensajes<br>entrantes</div></div>
+      <div class="metric m-green"> <div class="m-num" id="rep-r">—</div><div class="m-lbl">Respondidos<br>bot</div></div>
+      <div class="metric m-red">   <div class="m-num" id="rep-s">—</div><div class="m-lbl">Sin<br>respuesta</div></div>
+      <div class="metric m-orange"><div class="m-num" id="rep-ll">—</div><div class="m-lbl">Llamadas<br>24h</div></div>
+      <div class="metric m-green"> <div class="m-num" id="rep-ln">—</div><div class="m-lbl">Leads<br>nuevos</div></div>
+      <div class="metric m-purple"><div class="m-num" id="rep-ct">—</div><div class="m-lbl">Citas<br>agendadas</div></div>
+    </div>
+
+    <div class="g2">
+      <div class="card">
+        <div class="card-head"><span class="card-title"><span class="card-title-dot dot-blue"></span>💬 Mensajes — ¿respondidos?</span></div>
+        <table>
+          <thead><tr><th>Contacto</th><th>Recibió</th><th>Bot respondió</th><th>Resultado</th><th>Estado</th></tr></thead>
+          <tbody id="rep-m"><tr><td colspan="5" class="empty">Cargando…</td></tr></tbody>
+        </table>
+      </div>
+      <div class="card">
+        <div class="card-head"><span class="card-title"><span class="card-title-dot dot-orange"></span>📞 Llamadas — qué pasó</span></div>
+        <table>
+          <thead><tr><th>Teléfono</th><th>Hora</th><th>Acción</th><th>¿Respondió?</th></tr></thead>
+          <tbody id="rep-ll-t"><tr><td colspan="4" class="empty">Cargando…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-head"><span class="card-title"><span class="card-title-dot dot-purple"></span>📱 Publicaciones en redes — publicadas y próximas</span></div>
+      <div id="rep-posts"><div class="empty">Sincroniza Buffer para ver publicaciones</div></div>
+    </div>
+
+    <div class="g2">
+      <div class="card" style="margin-bottom:0">
+        <div class="card-head"><span class="card-title"><span class="card-title-dot dot-purple"></span>🌟 Interés Penthouse $4.5M</span></div>
+        <div style="padding:18px">
+          <div class="m-num" style="color:var(--purple);font-size:36px" id="rep-ph">—</div>
+          <div class="bar-track" style="margin-top:10px"><div class="bar-fill" id="rep-ph-b" style="background:var(--purple)"></div></div>
+          <div style="font-size:11px;color:var(--tx3);margin-top:6px" id="rep-ph-s"></div>
+        </div>
+      </div>
+      <div class="card" style="margin-bottom:0">
+        <div class="card-head"><span class="card-title"><span class="card-title-dot dot-green"></span>🏠 Interés Departamento $2.8M</span></div>
+        <div style="padding:18px">
+          <div class="m-num" style="color:var(--green);font-size:36px" id="rep-dp">—</div>
+          <div class="bar-track" style="margin-top:10px"><div class="bar-fill" id="rep-dp-b" style="background:var(--green)"></div></div>
+          <div style="font-size:11px;color:var(--tx3);margin-top:6px" id="rep-dp-s"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <div class="card-head"><span class="card-title"><span class="card-title-dot dot-orange"></span>🕐 Log completo 24h — todo lo que pasó</span></div>
+      <div id="rep-tl"></div>
+    </div>
+  </div>
+
+  <!-- ══ AGENTE ══════════════════════════ -->
+  <div id="pg-agente" class="page">
+    <div class="metrics m4" style="grid-template-columns:repeat(3,1fr)">
+      <div class="metric m-green">
+        <div style="font-size:22px;font-weight:800;color:var(--green)">🟢 Activo</div>
+        <div class="m-lbl" style="margin-top:4px">Bot Ana — WhatsApp 24/7</div>
+      </div>
+      <div class="metric m-purple">
+        <div class="m-num" style="font-size:22px" id="ag-buf">—</div>
+        <div class="m-lbl">Buffer — posts</div>
+      </div>
+      <div class="metric m-orange">
+        <div style="font-size:22px;font-weight:800;color:var(--orange)">🔧 Pendiente</div>
+        <div class="m-lbl" style="margin-top:4px">Llamadas de voz (Vapi)</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><span class="card-title"><span class="card-title-dot dot-green"></span>Módulos del agente</span></div>
+      <table>
+        <thead><tr><th>Módulo</th><th>Estado</th><th>Canal</th><th>Descripción</th></tr></thead>
+        <tbody>
+          <tr><td style="font-weight:600">Respuesta WhatsApp</td><td><span class="tag t-ci">✅ Activo</span></td><td><span class="tag t-wa">WhatsApp</span></td><td style="color:var(--tx3)">Responde con reglas + Claude Haiku cuando hay API key</td></tr>
+          <tr><td style="font-weight:600">Envío de fotos</td><td><span class="tag t-ci">✅ Activo</span></td><td><span class="tag t-wa">WhatsApp</span></td><td style="color:var(--tx3)">Secuencia automática de imágenes por propiedad</td></tr>
+          <tr><td style="font-weight:600">Rechazo de llamadas</td><td><span class="tag t-ci">✅ Activo</span></td><td><span class="tag t-ll">Llamada</span></td><td style="color:var(--tx3)">Rechaza y envía WhatsApp automáticamente</td></tr>
+          <tr><td style="font-weight:600">Buffer / Redes</td><td><span class="tag t-nu">🔗 Conectado</span></td><td><span class="tag t-ig">Instagram · TikTok</span></td><td style="color:var(--tx3)">Posts programados vía Buffer API GraphQL</td></tr>
+          <tr><td style="font-weight:600">Inbox Instagram/FB</td><td><span class="tag t-ni">⏳ Desarrollo</span></td><td><span class="tag t-ig">Instagram</span></td><td style="color:var(--tx3)">Requiere Meta Webhooks + app aprobada</td></tr>
+          <tr><td style="font-weight:600">Llamadas de voz IA</td><td><span class="tag t-pnd">🔧 Webhook listo</span></td><td><span class="tag t-ll">Twilio / Vapi</span></td><td style="color:var(--tx3)">POST /api/llamada-entrante — configura tu número</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<!-- Modal chat -->
+<div class="modal" id="modal" onclick="if(event.target===this)cerrarModal()">
+  <div class="mbox">
+    <div class="mh">
+      <span id="modal-title"></span>
+      <button class="mc" onclick="cerrarModal()">×</button>
+    </div>
+    <div class="mb" id="modal-body"></div>
+    <div style="padding:10px 18px;border-top:1px solid var(--border2);display:flex;align-items:center;justify-content:space-between">
+      <span style="font-size:10px;color:var(--tx3)">Solo lectura</span>
+      <a id="modal-wa-link" target="_blank" style="background:#25D366;color:#fff;padding:6px 14px;border-radius:6px;font-size:12px;font-weight:700;text-decoration:none">💬 Abrir WhatsApp</a>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ══ CONSTANTES ══ */
+const API = window.location.protocol === 'file:' ? 'http://localhost:3001' : ''
+const SB  = 'https://gnarxxwxagstuspkbvql.supabase.co/rest/v1'
+const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImduYXJ4eHd4YWdzdHVzcGtidnFsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0NTIxODcsImV4cCI6MjA5NjAyODE4N30.V-yBgHFtaSo_a0vCGXp3rHOxnEW9vJ-K_ww8DlAZtb0'
+const SBH = { apikey: KEY, Authorization: `Bearer ${KEY}` }
+const sbg = u => fetch(u, { headers: SBH }).then(r => r.json())
+
+let LEADS = [], INTS = [], CALLS = [], CALLS_VOZ = [], POSTS = [], DEALS = []
+
+/* ══ KANBAN ══════════════════════════════════════════════════════════════ */
+
+const ETAPAS_KANBAN = [
+  { id: 'Contacto',    label: 'Contacto',    color: '#3B82F6', emoji: '👋' },
+  { id: 'Propuesta',   label: 'Propuesta',   color: '#F59E0B', emoji: '📋' },
+  { id: 'Negociación', label: 'Negociación', color: '#8B5CF6', emoji: '🤝' },
+  { id: 'Cerrado',     label: 'Cerrado',     color: '#10B981', emoji: '✅' },
+]
+
+function fmtMXN(n) {
+  return new Intl.NumberFormat('es-MX', { style:'currency', currency:'MXN', minimumFractionDigits:0 }).format(n)
+}
+
+async function cargarDeals() {
+  try {
+    const res = await fetch(`${API}/api/deals`)
+    DEALS = await res.json()
+    renderKanban()
+  } catch(e) {
+    console.error('Error cargando deals:', e)
+  }
+}
+
+function renderKanban() {
+  const wrap = document.getElementById('kanban-wrap')
+  if (!wrap) return
+
+  const total = DEALS.length
+  const alertas = DEALS.filter(d => d.alerta_inactividad).length
+  const valorTotal = DEALS.reduce((s, d) => s + (d.valor || 0), 0)
+
+  document.getElementById('kanban-total').innerHTML =
+    `${total} prospectos · ${fmtMXN(valorTotal)} en pipeline · ${alertas > 0 ? `<span style="color:var(--red);font-weight:700">⚠️ ${alertas} requieren acción</span>` : '✅ Sin alertas'}`
+
+  // Actualizar badge del nav
+  const nb = document.getElementById('nb-alertas')
+  if (nb) { nb.textContent = alertas; nb.style.display = alertas > 0 ? 'inline' : 'none' }
+
+  wrap.innerHTML = ETAPAS_KANBAN.map(etapa => {
+    const cards = DEALS.filter(d => (d.etapa || 'Contacto') === etapa.id)
+    const valorCol = cards.reduce((s, d) => s + (d.valor || 0), 0)
+
+    const cardHtml = cards.length === 0
+      ? `<div class="kanban-empty">Sin prospectos</div>`
+      : cards.map(d => `
+        <div class="deal-card" draggable="true"
+             data-id="${d.id}" data-etapa="${d.etapa}"
+             ondragstart="onDragStart(event)" ondragend="onDragEnd(event)">
+          ${d.alerta_inactividad ? '<div class="alerta-inactividad">⚠️ Requiere Acción</div><div style="height:6px"></div>' : ''}
+          <div class="deal-card-name">${d.nombre}</div>
+          <div class="deal-card-tel">${fmt(d.telefono)}</div>
+          <div class="deal-card-valor">${fmtMXN(d.valor)}</div>
+          <div class="deal-card-footer">
+            <span class="deal-card-dias">🕐 ${d.dias_inactivo === 0 ? 'Hoy' : `${d.dias_inactivo}d sin actividad`}</span>
+            <a class="deal-card-wa" href="https://wa.me/52${tel10(d.telefono)}" target="_blank">WA</a>
+          </div>
+        </div>`).join('')
+
+    return `
+      <div class="kanban-col"
+           data-etapa="${etapa.id}"
+           ondragover="onDragOver(event)" ondrop="onDrop(event)" ondragleave="onDragLeave(event)">
+        <div class="kanban-col-head" style="border-top:3px solid ${etapa.color}">
+          <div class="kanban-col-title">
+            <span class="kanban-col-dot" style="background:${etapa.color}"></span>
+            ${etapa.emoji} ${etapa.label}
+            <span style="background:${etapa.color}22;color:${etapa.color};padding:2px 7px;border-radius:20px;font-size:11px">${cards.length}</span>
+          </div>
+          <div class="kanban-col-valor" style="color:${etapa.color}">${fmtMXN(valorCol)}</div>
+        </div>
+        <div class="kanban-cards" data-etapa="${etapa.id}">${cardHtml}</div>
+      </div>`
+  }).join('')
+}
+
+// ── Drag & Drop nativo ────────────────────────────────────────────────────
+
+let dragId = null, dragOrigEtapa = null
+
+function onDragStart(e) {
+  dragId = e.currentTarget.dataset.id
+  dragOrigEtapa = e.currentTarget.dataset.etapa
+  e.currentTarget.classList.add('dragging')
+  e.dataTransfer.effectAllowed = 'move'
+}
+
+function onDragEnd(e) {
+  e.currentTarget.classList.remove('dragging')
+  document.querySelectorAll('.kanban-cards').forEach(c => c.classList.remove('drag-over'))
+}
+
+function onDragOver(e) {
+  e.preventDefault()
+  e.dataTransfer.dropEffect = 'move'
+  e.currentTarget.querySelector('.kanban-cards')?.classList.add('drag-over')
+}
+
+function onDragLeave(e) {
+  e.currentTarget.querySelector('.kanban-cards')?.classList.remove('drag-over')
+}
+
+async function onDrop(e) {
+  e.preventDefault()
+  const nuevaEtapa = e.currentTarget.dataset.etapa
+  e.currentTarget.querySelector('.kanban-cards')?.classList.remove('drag-over')
+
+  if (!dragId || nuevaEtapa === dragOrigEtapa) return
+
+  // Optimistic update
+  const deal = DEALS.find(d => d.id === dragId)
+  if (!deal) return
+  const etapaAnterior = deal.etapa
+  deal.etapa = nuevaEtapa
+  deal.dias_inactivo = 0
+  deal.alerta_inactividad = false
+  renderKanban()
+
+  console.log(`[KANBAN] ${deal.nombre}: ${etapaAnterior} → ${nuevaEtapa}`)
+
+  try {
+    const res = await fetch(`${API}/api/deals/${dragId}/stage`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ etapa: nuevaEtapa })
+    })
+    if (!res.ok) throw new Error(await res.text())
+  } catch(err) {
+    console.error('[KANBAN] Error guardando etapa:', err)
+    deal.etapa = etapaAnterior  // revertir
+    renderKanban()
+    alert('Error al mover: ' + err.message)
+  }
+}
+
+/* ══ UTILIDADES ══ */
+// ⚠️ CRÍTICO — NO modificar fmt() — formatea números mexicanos +52 XXX XXX XXXX
+function fmt(t) {
+  const raw = (t || '').replace(/@lid|@s\.whatsapp\.net/g, '').replace(/\D/g, '')
+  const n = raw.length > 10 ? raw.slice(-10) : raw
+  if (n.length === 10) return '+52 ' + n.slice(0, 3) + ' ' + n.slice(3, 6) + ' ' + n.slice(6)
+  return raw || '—'
+}
+const dt  = iso => { if (!iso) return '—'; const d = new Date(iso); return d.toLocaleDateString('es-MX',{day:'2-digit',month:'short'}) + ' ' + d.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}) }
+const hr  = iso => { try { return new Date(iso).toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}) } catch { return '' } }
+const fh  = iso => { if (!iso) return '—'; return new Date(iso).toLocaleDateString('es-MX',{weekday:'short',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) }
+const esHoy    = iso => new Date(iso).toDateString() === new Date().toDateString()
+// Extraer últimos 10 dígitos para comparar teléfonos sin importar formato LID/raw
+const tel10 = t => (t||'').replace(/@lid|@s\.whatsapp\.net/g,'').replace(/\D/g,'').slice(-10)
+const es24h    = iso => (Date.now() - new Date(iso)) < 86400000
+const esSemana = iso => (Date.now() - new Date(iso)) < 7 * 86400000
+
+function tEstado(e) {
+  const m = { 'Nuevo':'t-nu','En Conversación':'t-co','Cita Agendada':'t-ci','No Interesado':'t-ni','Calificado':'t-ca' }
+  return `<span class="tag ${m[e]||'t-nd'}">${e||'—'}</span>`
+}
+function tInteres(i) {
+  return `<span class="tag ${i==='Penthouse'?'t-ph':i==='Departamento'?'t-dp':'t-nd'}">${i||'Sin definir'}</span>`
+}
+function tCanal(c) {
+  const cls = { 'WhatsApp':'t-wa','Llamada Rescatada':'t-ll','Instagram':'t-ig','TikTok':'t-tt' }
+  const ico = { 'WhatsApp':'💬','Llamada Rescatada':'📞','Instagram':'📸','TikTok':'🎵','Sitio Web':'🌐' }
+  return `<span class="tag ${cls[c]||'t-nd'}">${ico[c]||'·'} ${c||'—'}</span>`
+}
+function redTag(r) {
+  return `<span class="tag ${r==='instagram'?'t-ig':'t-tt'}">${r==='instagram'?'📸 Instagram':'🎵 TikTok'}</span>`
+}
+function htags(txt) {
+  return ((txt||'').match(/#[\wÀ-ÿ]+/g)||[]).map(h=>`<span class="htag">${h}</span>`).join('')
+}
+
+function postThumb(u) {
+  if (u.thumbnail) return `<img class="post-img" src="${u.thumbnail}" onerror="this.outerHTML='<div class=post-ph>${u.mediaType==='video'?'🎥':'📷'}</div>'">`
+  return `<div class="post-ph">${u.mediaType==='video'?'🎥':'📷'}</div>`
+}
+function postItem(u) {
+  const fecha = u.estado === 'enviado' ? fh(u.sentAt) : fh(u.dueAt)
+  return `<div class="post-item">
+    ${postThumb(u)}
+    <div class="post-body">
+      <div class="post-meta">
+        ${redTag(u.red)}
+        <span style="font-size:10px;color:var(--tx3)">@${u.cuenta}</span>
+        <span class="tag ${u.estado==='enviado'?'t-pub':'t-pnd'}" style="margin-left:auto">
+          ${u.estado==='enviado'?'✅ Publicado':'⏳ Programado'}
+        </span>
+      </div>
+      <div class="post-text">${(u.text||'').replace(/</g,'&lt;').replace(/\n/g,' ')}</div>
+      <div class="post-tags">${htags(u.text)}</div>
+      <div class="post-time">🕐 ${fecha}</div>
+    </div>
+  </div>`
+}
+function renderPostsIn(id, posts) {
+  const el = document.getElementById(id)
+  if (!posts.length) { el.innerHTML = '<div class="empty">Sin publicaciones</div>'; return }
+  const env  = posts.filter(p => p.estado === 'enviado')
+  const pend = posts.filter(p => p.estado === 'pendiente')
+  el.innerHTML =
+    (env.length  ? `<div class="sec-divider sd-green">✅ Publicados — ${env.length}</div>` + env.map(postItem).join('') : '') +
+    (pend.length ? `<div class="sec-divider sd-orange">⏳ Próximos — ${pend.length}</div>` + pend.map(postItem).join('') : '')
+}
+
+/* ══ CARGA PRINCIPAL ══ */
+async function cargar() {
+  try {
+    const [l,c,i] = await Promise.all([
+      sbg(`${SB}/leads?select=*&order=creado_en.desc`),
+      sbg(`${SB}/llamadas_rescatadas?select=*&order=creado_en.desc`),
+      sbg(`${SB}/interacciones?select=*&order=creado_en.desc&limit=500`),
+    ])
+    LEADS = Array.isArray(l) ? l : []
+    CALLS = Array.isArray(c) ? c : []
+    INTS  = Array.isArray(i) ? i : []
+    LEADS = LEADS.map(lead => ({ ...lead, msgs: INTS.filter(x => x.lead_id === lead.id) }))
+    try { const v = await sbg(`${SB}/llamadas_voz?select=*&order=created_at.desc&limit=50`); CALLS_VOZ = Array.isArray(v) ? v : [] } catch {}
+
+    renderResumen(); renderContactos(LEADS); renderMensajes(); renderLlamadas(); renderReporte()
+    cargarDeals()  // Pipeline Kanban
+    document.getElementById('r-hora').textContent = 'Actualizado ' + hr(new Date())
+
+    // Badge mensajes sin respuesta
+    const sr = LEADS.filter(l => {
+      const e24 = INTS.filter(i => es24h(i.creado_en) && i.lead_id === l.id && i.tipo === 'Mensaje Entrante')
+      if (!e24.length) return false
+      return !INTS.some(i => i.lead_id === l.id && i.tipo === 'Mensaje Saliente Bot' && new Date(i.creado_en) >= new Date(e24[0].creado_en))
+    })
+    const nb = document.getElementById('nb-msgs')
+    if (sr.length > 0) { nb.textContent = sr.length; nb.style.display = ''; document.getElementById('tb-sinresp').style.display = ''; document.getElementById('tb-sinresp').textContent = `⚠️ ${sr.length} sin respuesta` }
+    else { nb.style.display = 'none'; document.getElementById('tb-sinresp').style.display = 'none' }
+  } catch (e) { console.error(e) }
+}
+
+/* ══ BUFFER ══ */
+async function cargarPostsHoy() {
+  const el = document.getElementById('posts-hoy-lista')
+  if (!el) return
+  el.innerHTML = '<div class="empty">Cargando posts de hoy...</div>'
+  try {
+    const r = await fetch(`${API}/api/posts-hoy`)
+    const data = await r.json()
+    if (!data.posts?.length) {
+      el.innerHTML = `<div class="empty">Sin posts hoy · <strong>Abre Terminal y corre:</strong> <code style="background:#f1f5f9;padding:2px 6px;border-radius:4px">cd ~/chapultepec-bot && node publicar-diario.mjs</code></div>`
+      return
+    }
+    const redIcon = { Instagram:'📸', TikTok:'🎵' }
+    const tipoColor = { reel:'var(--red)', historia:'var(--orange)', video:'var(--blue)', imagen:'var(--purple)' }
+    el.innerHTML = data.posts.map(p => `
+      <div style="border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:18px">${redIcon[p.red]||'📱'}</span>
+            <div>
+              <span style="font-weight:700;color:var(--tx1)">${p.red}</span>
+              <span style="background:${tipoColor[p.tipo]||'var(--blue)'};color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;margin-left:6px">${p.tipo.toUpperCase()}</span>
+            </div>
+            <span style="color:var(--tx3);font-size:12px">${p.cuenta} · ${p.hora}</span>
+          </div>
+          <button onclick="copiarPost(this,'${p.texto_completo.replace(/'/g,"\\'")}','${p.red}')"
+            style="background:var(--blue);color:#fff;border:none;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;min-height:36px">
+            📋 Copiar
+          </button>
+        </div>
+        <div style="background:var(--bg);border-radius:8px;padding:12px;font-size:13px;color:var(--tx1);white-space:pre-wrap;max-height:120px;overflow-y:auto;line-height:1.5">${p.caption}</div>
+        <div style="margin-top:8px;font-size:10px;color:var(--tx3)">📅 Subir a las ${p.hora} · ${p.fecha}</div>
+      </div>`).join('')
+  } catch(e) {
+    el.innerHTML = `<div class="empty">Error: ${e.message}</div>`
+  }
+}
+
+function copiarPost(btn, texto, red) {
+  navigator.clipboard.writeText(texto).then(() => {
+    const orig = btn.innerHTML
+    btn.innerHTML = '✅ Copiado'
+    btn.style.background = 'var(--green)'
+    setTimeout(() => { btn.innerHTML = orig; btn.style.background = 'var(--blue)' }, 2000)
+    // Abrir la app correspondiente
+    if (red === 'Instagram') window.open('https://www.instagram.com/', '_blank')
+    else if (red === 'TikTok') window.open('https://www.tiktok.com/upload', '_blank')
+  })
+}
+
+async function cargarBuffer() {
+  document.getElementById('r-buffer').innerHTML  = '<div class="empty">Sincronizando…</div>'
+  document.getElementById('buf-lista').innerHTML = '<div class="empty">Sincronizando…</div>'
+  try {
+    const r = await fetch(`${API}/api/buffer-posts`)
+    const d = await r.json()
+    POSTS = d.posts || []
+    const env  = POSTS.filter(p => p.estado === 'enviado')
+    const pend = POSTS.filter(p => p.estado === 'pendiente')
+    document.getElementById('buf-pub').textContent  = env.length
+    document.getElementById('buf-pend').textContent = pend.length
+    document.getElementById('buf-ig').textContent   = POSTS.filter(p => p.red === 'instagram').length
+    document.getElementById('buf-tt').textContent   = POSTS.filter(p => p.red === 'tiktok').length
+    document.getElementById('tb-buf').textContent   = `📱 ${env.length} pub · ${pend.length} prog`
+    document.getElementById('ag-buf').textContent   = `${env.length} pub · ${pend.length} prog`
+    renderPostsIn('buf-lista', POSTS)
+    renderPostsIn('r-buffer', POSTS)
+    renderReporte()
+  } catch (e) {
+    const msg = `<div class="empty">⚠️ Error Buffer: ${e.message}</div>`
+    document.getElementById('r-buffer').innerHTML  = msg
+    document.getElementById('buf-lista').innerHTML = msg
+  }
+}
+
+/* ══ RESUMEN ══ */
+function renderResumen() {
+  document.getElementById('r-leads').textContent    = LEADS.length
+  document.getElementById('r-mensajes').textContent = INTS.filter(i => i.tipo==='Mensaje Entrante' && esHoy(i.creado_en)).length
+  document.getElementById('r-llamadas').textContent = CALLS.filter(c => esHoy(c.creado_en)).length
+  document.getElementById('r-citas').textContent    = LEADS.filter(l => l.estado==='Cita Agendada').length
+
+  // Timeline
+  const ico_cls = { 'Mensaje Entrante':'tl-ic-msg','Mensaje Saliente Bot':'tl-ic-bot','Llamada Rescatada':'tl-ic-call' }
+  const ico_em  = { 'Mensaje Entrante':'💬','Mensaje Saliente Bot':'🤖','Llamada Rescatada':'📞','Nota Manual':'📝','Cita Confirmada':'📅' }
+  const color   = { 'Mensaje Entrante':' style="color:var(--blue)"','Mensaje Saliente Bot':' style="color:var(--green)"','Llamada Rescatada':' style="color:var(--orange)"' }
+  const hoy = INTS.filter(i => esHoy(i.creado_en)).slice(0, 25)
+  document.getElementById('r-timeline').innerHTML = hoy.length === 0
+    ? '<div class="empty">Sin actividad hoy</div>'
+    : hoy.map(i => {
+      const l   = LEADS.find(x => x.id === i.lead_id)
+      const tel = fmt(l?.telefono || '')
+      const txt = i.tipo === 'Mensaje Entrante' ? `${tel} escribió: "${(i.contenido||'').substring(0,60)}"`
+                : i.tipo === 'Mensaje Saliente Bot' && (i.contenido||'').startsWith('[FOTOS') ? `Bot envió fotos a ${tel}`
+                : i.tipo === 'Mensaje Saliente Bot' ? `Bot respondió a ${tel}: "${(i.contenido||'').substring(0,50)}"`
+                : `${tel} — ${i.tipo}`
+      return `<div class="tl-item">
+        <div class="tl-ic ${ico_cls[i.tipo]||'tl-ic-star'}">${ico_em[i.tipo]||'·'}</div>
+        <div class="tl-body">
+          <div class="tl-text"${color[i.tipo]||''}>${txt}</div>
+          <div class="tl-meta">${hr(i.creado_en)}${l?.interes?' · '+l.interes:''}</div>
+        </div>
+      </div>`
+    }).join('')
+
+  // Barras interés
+  const ph = LEADS.filter(l => l.interes==='Penthouse').length
+  const dp = LEADS.filter(l => l.interes==='Departamento').length
+  const nd = LEADS.length - ph - dp
+  const mx = Math.max(ph, dp, nd, 1)
+  document.getElementById('r-interes').innerHTML = `
+    <div class="bar-row">
+      <div class="bar-label"><span style="color:#92400E;font-weight:600">🌟 Penthouse $4.5M</span><strong>${ph}</strong></div>
+      <div class="bar-track"><div class="bar-fill" style="background:#F59E0B;width:${ph/mx*100}%"></div></div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label"><span style="color:var(--green);font-weight:600">🏠 Departamento $2.8M</span><strong>${dp}</strong></div>
+      <div class="bar-track"><div class="bar-fill" style="background:var(--green);width:${dp/mx*100}%"></div></div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label"><span style="color:var(--tx3);font-weight:600">Sin definir</span><strong>${nd}</strong></div>
+      <div class="bar-track"><div class="bar-fill" style="background:var(--border);width:${nd/mx*100}%"></div></div>
+    </div>`
+}
+
+/* ══ CONTACTOS ══ */
+function filtrar() {
+  const f = document.getElementById('c-filtro').value
+  renderContactos(f ? LEADS.filter(l => l.estado===f) : LEADS)
+}
+function renderContactos(leads) {
+  document.getElementById('c-total').textContent = leads.length
+  document.getElementById('c-tabla').innerHTML = leads.map(l => {
+    const msgs = (l.msgs||[]).filter(m => !(m.contenido||'').startsWith('[FOTOS'))
+    const last = msgs.find(m => m.tipo==='Mensaje Entrante')
+    return `<tr>
+      <td style="font-family:monospace;font-size:12px;font-weight:700">${fmt(l.telefono)}</td>
+      <td>${tInteres(l.interes)}</td><td>${tCanal(l.canal_origen)}</td><td>${tEstado(l.estado)}</td>
+      <td style="color:var(--tx3);font-size:11px">${last?dt(last.creado_en):dt(l.creado_en)}</td>
+      <td style="font-weight:700;color:var(--blue)">${msgs.length}</td>
+      <td style="display:flex;gap:4px">
+        <button onclick="verChat('${l.id}')" class="btn btn-sm">Chat</button>
+        <a href="https://wa.me/52${tel10(l.telefono)}" target="_blank" class="btn btn-sm" style="background:#25D366;color:#fff;text-decoration:none">WA</a>
+      </td>
+    </tr>`
+  }).join('') || '<tr><td colspan="7" class="empty">Sin contactos</td></tr>'
+}
+
+/* ══ MENSAJES ══ */
+function filtrarMsgs() {
+  const c = document.getElementById('m-canal').value
+  renderMensajesTabla(c ? LEADS.filter(l => l.canal_origen===c) : LEADS)
+}
+function renderMensajes() {
+  const ent  = INTS.filter(i => i.tipo==='Mensaje Entrante').length
+  const resp = INTS.filter(i => i.tipo==='Mensaje Saliente Bot').length
+  const hoyC = new Set(INTS.filter(i => esHoy(i.creado_en) && i.tipo==='Mensaje Entrante').map(i => i.lead_id)).size
+  document.getElementById('m-entrantes').textContent  = ent
+  document.getElementById('m-respondidos').textContent = resp
+  document.getElementById('m-hoy').textContent        = hoyC
+  document.getElementById('m-tasa').textContent       = ent>0 ? Math.min(100,Math.round(resp/ent*100))+'%' : '—'
+  renderMensajesTabla(LEADS)
+}
+function renderMensajesTabla(leads) {
+  document.getElementById('m-tabla').innerHTML = leads.filter(l => (l.msgs||[]).length>0).map(l => {
+    const msgs = (l.msgs||[]).filter(m => !(m.contenido||'').startsWith('[FOTOS'))
+    const last = msgs[0]
+    return `<tr>
+      <td class="lnk" onclick="verChat('${l.id}')" style="font-family:monospace;font-size:11px">${fmt(l.telefono)}</td>
+      <td>${tCanal(l.canal_origen)}</td>
+      <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--tx2)">${(last?.contenido||'').substring(0,60)||'—'}</td>
+      <td style="color:var(--tx3);font-size:11px;white-space:nowrap">${last?dt(last.creado_en):'—'}</td>
+      <td style="font-weight:700;color:var(--blue)">${msgs.length}</td>
+      <td>${tEstado(l.estado)}</td>
+      <td><button onclick="verChat('${l.id}')" class="btn btn-sm">Chat</button></td>
+    </tr>`
+  }).join('') || '<tr><td colspan="7" class="empty">Sin conversaciones</td></tr>'
+}
+
+/* ══ LLAMADAS ══ */
+function renderLlamadas() {
+  // Deduplicar: misma llamada registrada varias veces por Baileys (mismo lead_id, <5 min de diferencia)
+  const CALLS_UNICAS = CALLS.filter((c, i) =>
+    !CALLS.slice(0, i).some(prev =>
+      prev.lead_id === c.lead_id &&
+      Math.abs(new Date(prev.creado_en) - new Date(c.creado_en)) < 300000
+    )
+  )
+
+  // Buscar todos los leads que coincidan por los últimos 10 dígitos del teléfono
+  const leadsDelNumero = c => LEADS.filter(l => tel10(l.telefono) === tel10(c.telefono))
+
+  // ¿Respondió? = algún lead con ese número tiene mensaje entrante DESPUÉS de la llamada
+  const respondio = c => leadsDelNumero(c).some(l =>
+    INTS.some(i => i.lead_id===l.id && i.tipo==='Mensaje Entrante' && new Date(i.creado_en)>new Date(c.creado_en))
+  )
+  // Lead principal = el que tiene más mensajes entre los que coinciden
+  const leadPrincipal = c => {
+    const candidates = leadsDelNumero(c)
+    if (!candidates.length) return null
+    return candidates.sort((a,b) => (b.msgs?.length||0) - (a.msgs?.length||0))[0]
+  }
+
+  const hoy    = CALLS_UNICAS.filter(c => esHoy(c.creado_en))
+  const semana = CALLS_UNICAS.filter(c => esSemana(c.creado_en))
+  const conv   = CALLS_UNICAS.filter(c => respondio(c))
+
+  document.getElementById('ll-total').textContent  = CALLS_UNICAS.length
+  document.getElementById('ll-hoy').textContent    = hoy.length
+  document.getElementById('ll-semana').textContent = semana.length
+  document.getElementById('ll-conv').textContent   = conv.length
+
+  document.getElementById('ll-tabla').innerHTML = CALLS_UNICAS.length===0
+    ? '<tr><td colspan="7" class="empty">Sin llamadas registradas — el bot registra automáticamente cuando alguien llama</td></tr>'
+    : CALLS_UNICAS.map(c => {
+      const lead = leadPrincipal(c)
+      const resp = respondio(c)
+      // tel10 da últimos 10 dígitos → agregar 52 para link WA
+      const numWA = '52' + tel10(c.telefono)
+      const numFmt = fmt(c.telefono)
+      return `<tr>
+        <td style="font-family:monospace;font-size:12px;font-weight:700;color:var(--red)">${numFmt}</td>
+        <td style="color:var(--tx3);font-size:11px;white-space:nowrap">${dt(c.creado_en)}</td>
+        <td><span class="tag t-ll">📵 Bot rechazó · WA enviado</span></td>
+        <td>${resp
+          ? '<span style="color:var(--green);font-weight:700;font-size:12px">✅ Respondió</span>'
+          : '<span style="color:var(--red);font-weight:700;font-size:12px">⚠️ Sin respuesta</span>'}</td>
+        <td>${tInteres(lead?.interes)}</td>
+        <td style="display:flex;gap:4px;flex-wrap:wrap">
+          <a href="https://wa.me/${numWA}" target="_blank"
+             class="btn btn-sm" style="background:#25D366;color:#fff;text-decoration:none;font-weight:700">
+            💬 Enviar WA
+          </a>
+          ${lead ? `<button onclick="verChat('${lead.id}')" class="btn btn-sm">Ver chat</button>` : ''}
+        </td>
+      </tr>`
+    }).join('')
+
+  document.getElementById('voz-tabla').innerHTML = CALLS_VOZ.length===0
+    ? '<tr><td colspan="3" class="empty">Sin llamadas de voz — activa el webhook Vapi/Twilio</td></tr>'
+    : CALLS_VOZ.map(v => `<tr>
+      <td style="font-family:monospace;font-size:11px;font-weight:700;color:var(--orange)">${fmt(v.telefono)}</td>
+      <td style="color:var(--tx3);font-size:11px">${dt(v.created_at)}</td>
+      <td style="color:var(--tx2)">${(v.transcripcion||'Sin transcripción').substring(0,100)}</td>
+    </tr>`).join('')
+}
+
+/* ══ REPORTE ══ */
+function renderReporte() {
+  document.getElementById('rep-fecha').textContent = new Date().toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long',year:'numeric'})
+
+  const ints24  = INTS.filter(i => es24h(i.creado_en))
+  const leads24 = LEADS.filter(l => es24h(l.creado_en))
+  // Deduplicar llamadas en 24h (mismo criterio que renderLlamadas)
+  const calls24raw = CALLS.filter(c => es24h(c.creado_en))
+  const calls24 = calls24raw.filter((c,i) =>
+    !calls24raw.slice(0,i).some(p => p.lead_id===c.lead_id && Math.abs(new Date(p.creado_en)-new Date(c.creado_en))<300000)
+  )
+  const ent24   = ints24.filter(i => i.tipo==='Mensaje Entrante')
+  const res24   = ints24.filter(i => i.tipo==='Mensaje Saliente Bot')
+  const citas   = LEADS.filter(l => l.estado==='Cita Agendada')
+  const ph      = LEADS.filter(l => l.interes==='Penthouse').length
+  const dp      = LEADS.filter(l => l.interes==='Departamento').length
+  const mx      = Math.max(ph, dp, 1)
+
+  const sinResp = LEADS.filter(l => {
+    const e = ints24.filter(i => i.lead_id===l.id && i.tipo==='Mensaje Entrante')
+    if (!e.length) return false
+    return !INTS.some(i => i.lead_id===l.id && i.tipo==='Mensaje Saliente Bot' && new Date(i.creado_en)>=new Date(e[0].creado_en))
+  })
+
+  document.getElementById('rep-e').textContent  = ent24.length
+  document.getElementById('rep-r').textContent  = res24.length
+  document.getElementById('rep-s').textContent  = sinResp.length
+  document.getElementById('rep-ll').textContent = calls24.length
+  document.getElementById('rep-ln').textContent = leads24.length
+  document.getElementById('rep-ct').textContent = citas.length
+  document.getElementById('rep-ph').textContent = ph
+  document.getElementById('rep-ph-b').style.width = (ph/mx*100)+'%'
+  document.getElementById('rep-ph-s').textContent = `${ph} personas interesadas en Penthouse`
+  document.getElementById('rep-dp').textContent = dp
+  document.getElementById('rep-dp-b').style.width = (dp/mx*100)+'%'
+  document.getElementById('rep-dp-s').textContent = `${dp} personas interesadas en Departamento`
+
+  // Tabla mensajes
+  const conAct = LEADS.filter(l => ints24.some(i => i.lead_id===l.id))
+  document.getElementById('rep-m').innerHTML = !conAct.length
+    ? '<tr><td colspan="5" class="empty">Sin mensajes en 24h</td></tr>'
+    : conAct.map(l => {
+      const eL = ints24.filter(i => i.lead_id===l.id && i.tipo==='Mensaje Entrante').length
+      const rL = ints24.filter(i => i.lead_id===l.id && i.tipo==='Mensaje Saliente Bot').length
+      const sr = Math.max(0, eL-rL)
+      return `<tr>
+        <td class="lnk" onclick="verChat('${l.id}')" style="font-family:monospace;font-size:11px">${fmt(l.telefono)}</td>
+        <td style="font-weight:700;color:var(--blue);text-align:center">${eL}</td>
+        <td style="font-weight:700;color:var(--green);text-align:center">${rL}</td>
+        <td>${sr>0
+          ? `<span style="color:var(--red);font-weight:700;font-size:12px">⚠️ ${sr} sin resp.</span>`
+          : '<span style="color:var(--green);font-weight:700;font-size:12px">✅ Respondido</span>'}</td>
+        <td>${tEstado(l.estado)}</td>
+      </tr>`
+    }).join('')
+
+  // Tabla llamadas — con matching robusto por últimos 10 dígitos
+  document.getElementById('rep-ll-t').innerHTML = !calls24.length
+    ? '<tr><td colspan="4" class="empty">Sin llamadas en 24h</td></tr>'
+    : calls24.map(c => {
+      const resp = LEADS.filter(l => tel10(l.telefono)===tel10(c.telefono))
+        .some(l => INTS.some(i => i.lead_id===l.id && i.tipo==='Mensaje Entrante' && new Date(i.creado_en)>new Date(c.creado_en)))
+      return `<tr>
+        <td style="font-family:monospace;font-size:11px;font-weight:700;color:var(--orange)">${fmt(c.telefono)}</td>
+        <td style="color:var(--tx3);font-size:11px">${hr(c.creado_en)}</td>
+        <td><span class="tag t-ll">📵 Rechazó · WA enviado</span></td>
+        <td>${resp
+          ? '<span style="color:var(--green);font-weight:700">✅ Abrió chat WA</span>'
+          : '<span style="color:var(--orange);font-weight:700">⏳ No ha respondido</span>'}</td>
+      </tr>`
+    }).join('')
+
+  // Posts
+  renderPostsIn('rep-posts', POSTS)
+
+  // Timeline 24h
+  const tl = [...ints24,
+    ...calls24.map(c => ({ tipo:'Llamada Rescatada', creado_en:c.creado_en, lead_id:c.lead_id }))
+  ].sort((a,b) => new Date(b.creado_en)-new Date(a.creado_en))
+  const ic  = { 'Mensaje Entrante':'tl-ic-msg','Mensaje Saliente Bot':'tl-ic-bot','Llamada Rescatada':'tl-ic-call' }
+  const em  = { 'Mensaje Entrante':'💬','Mensaje Saliente Bot':'🤖','Llamada Rescatada':'📞' }
+  const col = { 'Mensaje Entrante':' style="color:var(--blue)"','Mensaje Saliente Bot':' style="color:var(--green)"','Llamada Rescatada':' style="color:var(--orange)"' }
+  document.getElementById('rep-tl').innerHTML = !tl.length
+    ? '<div class="empty">Sin actividad en las últimas 24h</div>'
+    : tl.map(i => {
+      const l = LEADS.find(x => x.id===i.lead_id)
+      const tel = fmt(l?.telefono||'')
+      const txt = i.tipo==='Llamada Rescatada' ? `${tel} llamó → bot rechazó y envió WhatsApp`
+                : i.tipo==='Mensaje Entrante' ? `${tel} escribió: "${(i.contenido||'').substring(0,70)}"`
+                : (i.contenido||'').startsWith('[FOTOS') ? `Bot envió fotos a ${tel}`
+                : `Bot respondió a ${tel}: "${(i.contenido||'').substring(0,60)}"`
+      return `<div class="tl-item">
+        <div class="tl-ic ${ic[i.tipo]||'tl-ic-star'}">${em[i.tipo]||'·'}</div>
+        <div class="tl-body">
+          <div class="tl-text"${col[i.tipo]||''}>${txt}</div>
+          <div class="tl-meta">${hr(i.creado_en)}${l?.interes?' · '+l.interes:''}${l?.estado?' · '+l.estado:''}</div>
+        </div>
+      </div>`
+    }).join('')
+
+  // Resumen ejecutivo
+  const tasa = ent24.length>0 ? Math.min(100,Math.round(res24.length/ent24.length*100)) : 100
+  const env  = POSTS.filter(p => p.estado==='enviado')
+  const pend = POSTS.filter(p => p.estado==='pendiente')
+  document.getElementById('rep-exec').innerHTML = `
+    <strong style="font-size:14px;letter-spacing:-.2px">📋 Resumen ejecutivo — últimas 24 horas</strong><br><br>
+    💬 <strong style="color:var(--blue)">${ent24.length} mensajes</strong> recibidos. Bot respondió <strong style="color:var(--green)">${res24.length}</strong> — tasa <strong>${tasa}%</strong>.
+    ${sinResp.length>0
+      ? `<strong style="color:var(--red)"> ⚠️ ${sinResp.length} sin respuesta — contactar: ${sinResp.map(l=>fmt(l.telefono)).join(', ')}</strong>`
+      : '<span style="color:var(--green)"> ✅ Todas respondidas</span>'}
+    <br><br>
+    📞 <strong style="color:var(--orange)">${calls24.length} llamada${calls24.length!==1?'s':''}</strong> interceptada${calls24.length!==1?'s':''}.
+    ${calls24.length>0 ? 'Bot rechazó y envió WA automático a cada número.' : 'Sin llamadas hoy.'}
+    <br><br>
+    👥 <strong style="color:var(--purple)">${leads24.length} lead${leads24.length!==1?'s':''} nuevo${leads24.length!==1?'s':''}</strong> hoy.
+    Total CRM: <strong>${LEADS.length}</strong>. Interés: <strong>${ph} Penthouse</strong> · <strong>${dp} Departamento</strong>. Citas: <strong style="color:var(--green)">${citas.length}</strong>.
+    ${citas.length>0?'<br>🎯 <strong>Acción:</strong> Confirmar citas 24h antes por WhatsApp.':''}
+    <br><br>
+    📱 <strong>Buffer:</strong>
+    ${env.length>0 ? `<strong style="color:var(--green)">✅ ${env.length} publicado${env.length!==1?'s':''}</strong> — ${env.map(p=>(p.red==='instagram'?'📸':'🎵')+' '+fh(p.sentAt)).join(' · ')}` : 'Sin publicaciones recientes.'}
+    ${pend.length>0 ? ` · <strong style="color:var(--orange)">⏳ ${pend.length} programado${pend.length!==1?'s':''}</strong>` : ''}
+    ${POSTS.length===0 ? '<em style="color:var(--tx3)"> — sincroniza Buffer para ver datos</em>' : ''}
+  `
+}
+
+/* ══ MODAL CHAT ══ */
+function verChat(id) {
+  const lead = LEADS.find(l => l.id===id); if (!lead) return
+  const msgs = (lead.msgs||[]).filter(m => !(m.contenido||'').startsWith('[FOTOS'))
+  const numFmt = fmt(lead.telefono)
+  const numWA  = '52' + tel10(lead.telefono)
+  document.getElementById('modal-title').textContent = `Chat · ${numFmt} · ${lead.interes||'—'}`
+  document.getElementById('modal-wa-link').href = `https://wa.me/${numWA}`
+  document.getElementById('modal-body').innerHTML = msgs.length===0
+    ? '<div class="empty">Sin mensajes</div>'
+    : [...msgs].reverse().map(m => `
+      <div class="bbl ${m.tipo==='Mensaje Entrante'?'b-cli':'b-bot'}">
+        ${m.tipo!=='Mensaje Entrante'?'<div class="b-nm">Ana (Bot)</div>':''}
+        <div class="b-tx">${(m.contenido||'').replace(/</g,'&lt;')}</div>
+        <div class="b-ts">${dt(m.creado_en)}</div>
+      </div>`).join('')
+  document.getElementById('modal').classList.add('open')
+  setTimeout(() => { const b=document.getElementById('modal-body'); b.scrollTop=b.scrollHeight }, 50)
+}
+function cerrarModal() { document.getElementById('modal').classList.remove('open') }
+
+/* ══ NAVEGACIÓN ══ */
+const PAGE_TITLES = {
+  resumen:   'Resumen General',
+  kanban:    '🗂 Pipeline de Ventas',
+  contactos: 'Contactos · Leads',
+  mensajes:  'Central de Mensajes',
+  llamadas:  'Registro de Llamadas',
+  redes:     'Redes Sociales · Buffer',
+  reporte:   'Reporte 24 horas',
+  agente:    'Agente Inteligente',
+}
+function nav(id, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('on'))
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('on'))
+  document.getElementById('pg-' + id).classList.add('on')
+  el.classList.add('on')
+  document.getElementById('tb-title').textContent = PAGE_TITLES[id] || id
+  if (id === 'redes') { cargarBuffer(); cargarPostsHoy() }
+  if (id === 'kanban') cargarDeals()
+}
+
+/* ══ INIT ══ */
+cargar()
+cargarBuffer()
+setInterval(cargar, 30000)
+setInterval(cargarDeals, 60000)
+</script>
+</body>
+</html>
