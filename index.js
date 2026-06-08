@@ -1088,6 +1088,32 @@ async function apiRouter(req, res) {
     return true
   }
 
+  // POST /api/test-send — enviar info+fotos a un número manualmente
+  if (path === '/api/test-send' && req.method === 'POST') {
+    let body = ''
+    req.on('data', d => body += d)
+    req.on('end', async () => {
+      try {
+        const { telefono } = JSON.parse(body || '{}')
+        if (!telefono) { res.writeHead(400, JSON_H); res.end(JSON.stringify({ error: 'Falta telefono' })); return }
+        if (!sockActual || !WA_CONECTADO) { res.writeHead(503, JSON_H); res.end(JSON.stringify({ error: 'WhatsApp no conectado' })); return }
+        const soloDigitos = telefono.replace(/[^\d]/g, '')
+        const jid = `${soloDigitos}@s.whatsapp.net`
+        res.writeHead(200, JSON_H); res.end(JSON.stringify({ ok: true, jid }))
+        // Enviar en background
+        await sockActual.sendMessage(jid, { text: MSG_INFO_COMPLETA })
+        await new Promise(r => setTimeout(r, 1500))
+        await enviarSecuencia(sockActual, jid, 'ph')
+        await new Promise(r => setTimeout(r, 2000))
+        await sockActual.sendMessage(jid, { text: MSG_CONCERTAR_CITA })
+        console.log(`📤 [TEST] Fotos enviadas → ${soloDigitos}`)
+      } catch (e) {
+        console.error('[TEST]', e.message)
+      }
+    })
+    return true
+  }
+
   return false
 }
 
