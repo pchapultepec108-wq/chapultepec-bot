@@ -353,47 +353,42 @@ function detectarInteres(t) {
   return null
 }
 
-// ── Mensajes de agendado de cita ─────────────────────────────────────────────
+// ── Mensajes del flujo ───────────────────────────────────────────────────────
 
-const MSG_AGENDAR_CITA = `¿Te gustaría conocerlo en persona? 📅
+const MSG_INFO_COMPLETA = `🏢 *Penthouse Parque Chapultepec — Última unidad*
+📍 Bajada de Chapultepec 18-A, Cuernavaca · A 50m del Parque Chapultepec
 
-Atendemos *lunes a sábado*, mañana o tarde, con cita previa.
+💰 *$4,500,000 MXN* · Entrega inmediata
+📐 336.83 m² totales · 117.45 m² área privada
+🌿 Roofgarden 85.74 m² + *Jacuzzi privado* con vista panorámica
+🛏️ 3 recámaras con baño completo · 3.5 baños totales
+🚗 2 cajones de estacionamiento techados
+🛗 Elevador exclusivo directo al departamento
+🏊 Alberca · Jardín tropical · Seguridad 24/7`
 
-👉 ¿Qué día te acomoda esta semana?
+const MSG_CONCERTAR_CITA = `📅 *¿Cuándo te gustaría conocerlo en persona?*
 
-1️⃣ Mañana
-2️⃣ Este fin de semana
-3️⃣ Entre semana (lunes a viernes)
+Atendemos *lunes a sábado*, de 10am a 6pm.
 
-Responde con el número o dime directamente el día y hora 🗓️`
-
-const MSG_PEDIR_DIA = `¡Perfecto! 🙌
-
-¿Qué día y hora te quedan mejor?
-
-📍 *Bajada de Chapultepec 18-A*, Cuernavaca
-⏰ Horarios: lunes a sábado, 10am – 6pm
-
-Dime el día y te confirmo de inmediato 😊`
+Dime el día y hora y te confirmo de inmediato 👇`
 
 const MSG_CONFIRMAR_CITA = `✅ *¡Visita confirmada!*
 
 Te esperamos en:
 📍 *Bajada de Chapultepec 18-A*
 Col. Chapultepec, Cuernavaca, Morelos
-_(a 50 metros del Parque Chapultepec)_
 
-📞 Si necesitas cambiar el horario: 777 175 84 12
-🗺️ https://maps.app.goo.gl/chapultepec18A
+📞 777 175 84 12
+🗺️ https://maps.app.goo.gl/BajadaChapultepec18A
 
-Te mandaremos un recordatorio el día anterior. ¿Tienes alguna pregunta antes de tu visita? 😊`
+¡Nos vemos pronto! 😊`
 
-const MSG_RECORDATORIO_CITA = `Ya tienes tu visita agendada al *Penthouse Parque Chapultepec* 🏠✅
+const MSG_RECORDATORIO_CITA = `Tienes tu visita agendada al *Penthouse Parque Chapultepec* ✅
 
 📍 Bajada de Chapultepec 18-A, Cuernavaca
 📞 777 175 84 12
 
-¿Tienes alguna pregunta o necesitas cambiar el horario?`
+¿Necesitas cambiar el horario o tienes alguna pregunta?`
 
 // ── WhatsApp ──────────────────────────────────────────────────────────────────
 
@@ -609,75 +604,48 @@ Te mando las fotos ahora mismo 📸`
       }
       // ───────────────────────────────────────────────────────────────────
 
-      // ══ ETAPA 1: Primer contacto ══════════════════════════════════════
-      if (esPrimerMensaje) {
-        await send(`¡Hola! 👋 Soy Ana de *Parque Chapultepec*, Cuernavaca.\n\n⚠️ Solo queda *1 unidad disponible*:\n🌟 *Penthouse — $4,500,000 MXN*\n336 m² · Roof Garden 86 m² · Jacuzzi · 3 suites · Elevador privado\n\nTe mando las fotos ahora mismo 📸`)
+      // ══ ETAPA 1: Cualquier primer contacto → info + fotos + cita ════════
+      if (esPrimerMensaje || !fotosYaEnviadas) {
+        await send(MSG_INFO_COMPLETA)
         await new Promise(r => setTimeout(r, 1500))
         await enviarFotos()
-        await new Promise(r => setTimeout(r, 2500))
-        await send(MSG_AGENDAR_CITA)
+        await new Promise(r => setTimeout(r, 2000))
+        await send(MSG_CONCERTAR_CITA)
         continue
       }
 
-      // ══ ETAPA 2: Ya recibió fotos → seguimiento a visita ═════════════
+      // ══ ETAPA 2: Ya recibió info y fotos → solo agendar ══════════════
       if (fotosYaEnviadas) {
         if (citaAgendada) {
-          // Ya tiene cita → IA responde dudas, pero recuerda los datos de la visita
-          let resp
-          try { resp = USA_IA ? await respuestaIA(leadId, texto) : MSG_RECORDATORIO_CITA }
-          catch { resp = MSG_RECORDATORIO_CITA }
-          await send(resp)
+          await send(MSG_RECORDATORIO_CITA)
           continue
         }
 
-        // Detectar confirmación de día y/o hora (PRIMERO — más específico)
-        const confirmaDia = /lunes|martes|mi[eé]rcoles|jueves|viernes|s[aá]bado|domingo|ma[ñn]ana|pasado|esta semana|siguiente|pr[oó]ximo|tarde|ma[ñn]ana por|hoy|\b\d{1,2}(:\d{2})?\s*(am|pm|hrs?)/i.test(texto)
+        // Detectar día/hora → confirmar cita
+        const confirmaDia = /lunes|martes|mi[eé]rcoles|jueves|viernes|s[aá]bado|domingo|ma[ñn]ana|pasado|esta semana|pr[oó]ximo|hoy|\b\d{1,2}(:\d{2})?\s*(am|pm|hrs?)/i.test(texto)
         if (confirmaDia) {
           await send(MSG_CONFIRMAR_CITA)
           await supabase.from('leads').update({ estado: 'Cita Agendada', fecha_cita: new Date().toISOString() }).eq('id', leadId)
           continue
         }
 
-        // Detectar rechazo (ANTES de quiereVisitar — "no me interesa" tiene "interesa")
-        const rechaza = /no (me )?interesa|no gracias|ya no|ya tengo|no por ahora|otro momento|despu[eé]s|no quiero/i.test(texto)
+        // Detectar rechazo
+        const rechaza = /no (me )?interesa|no gracias|ya no|ya tengo|no por ahora|no quiero/i.test(texto)
         if (rechaza) {
-          await send(`Entendido, sin problema 🙏\n\nCuando quieras retomar la búsqueda de tu hogar ideal en Cuernavaca, aquí estaré. ¡Que tengas excelente día!`)
+          await send(`Entendido, sin problema 🙏 Si en algún momento quieres retomar, aquí estaré. ¡Buen día!`)
           await supabase.from('leads').update({ estado: 'No Interesado' }).eq('id', leadId)
           continue
         }
 
-        // Detectar intención de agendar (quiere visitar pero no dio día)
-        const quiereVisitar = /^s[íi]$|claro|dale|me interesa|quiero|me gustar[íi]a|cu[aá]ndo|a qu[eé] hora|disponibilidad|visita|conocer|ir a ver/i.test(texto)
-        if (quiereVisitar) {
-          await send(MSG_PEDIR_DIA)
-          continue
-        }
-
-        // Cualquier otro mensaje post-fotos → IA contextual + empujar a visita
-        let resp
-        try { resp = USA_IA ? await respuestaIA(leadId, texto) : MSG_AGENDAR_CITA }
-        catch { resp = MSG_AGENDAR_CITA }
-        await send(resp)
+        // Cualquier otro mensaje → empujar a confirmar cita
+        await send(MSG_CONCERTAR_CITA)
         continue
       }
 
-      // ══ ETAPA 3: Aún no tiene fotos ══════════════════════════════════
-
-      const pideFotos = /foto|imagen|ver foto|ver im[aá]gen|manda|env[íi]a|s[íi]\b|dale|claro|info|cu[eé]ntame|muestrame|mu[eé]strame|quiero ver|ver las/i.test(texto)
-
-      if (pideFotos) {
-        await send(`¡Aquí van las fotos del Penthouse! 📸`)
-        await new Promise(r => setTimeout(r, 800))
-        await enviarFotos()
-        await new Promise(r => setTimeout(r, 2500))
-        await send(MSG_AGENDAR_CITA)
-        continue
-      }
-
-      // Si no pide fotos → IA responde y luego ofrece fotos si hay interés
+      // Fallback (no debería llegar aquí)
       let respuesta
-      try { respuesta = USA_IA ? await respuestaIA(leadId, texto) : respuestaReglas(texto) }
-      catch { respuesta = respuestaReglas(texto) }
+      try { respuesta = USA_IA ? await respuestaIA(leadId, texto) : MSG_CONCERTAR_CITA }
+      catch { respuesta = MSG_CONCERTAR_CITA }
 
       await send(respuesta)
       console.log(`🤖 → ${respuesta.substring(0, 80)}`)
@@ -793,26 +761,8 @@ async function apiRouter(req, res) {
           return
         }
 
-        const FICHA = `¡Hola! 🏢 Gracias por tu interés en nuestro Penthouse Exclusivo en Cuernavaca (a 50m del Parque Chapultepec).
-
-Para darte una atención inmediata y que puedas revisar los detalles en alta definición, aquí tienes la información de la ÚLTIMA UNIDAD DISPONIBLE:
-
-💰 Precio Total: $4,500,000 MXN
-📐 Construcción: 336.83 m²
-📐 Área Privada: 117.45 m²
-🌿 Terraza: 85.74 m² de Roofgarden + JACUZZI INCLUIDO
-🛏️ Distribución: 3 Recámaras con baños completos y 3.5 baños totales
-🚗 Estacionamiento: 2 cajones techados
-🛗 Acceso: Elevador directo al departamento con vista panorámica
-
-📸 Ver Galería de Fotos y Ficha Técnica: https://parquechapultepecmorelos.com
-📱 Síguenos en Instagram: https://instagram.com/pchapultepec
-📅 ¿Te gustaría conocerlo? Agenda una visita personalizada directamente aquí para elegir tu horario: https://parquechapultepecmorelos.com
-
-Si lo prefieres, puedes responderme por este chat y te atenderé personalmente. ¡Quedamos a tus órdenes!`
-
-        await sockActual.sendMessage(jid, { text: FICHA })
-        if (leadId) await log(leadId, 'Mensaje Saliente Bot', FICHA)
+        await sockActual.sendMessage(jid, { text: MSG_INFO_COMPLETA })
+        if (leadId) await log(leadId, 'Mensaje Saliente Bot', MSG_INFO_COMPLETA)
 
         // Enviar fotos del PH si no las ha recibido antes
         const fotosEnviadas = leadId ? await yaEnvioFotos(leadId) : false
@@ -825,10 +775,10 @@ Si lo prefieres, puedes responderme por este chat y te atenderé personalmente. 
           }
         }
 
-        // Mensaje final para agendar visita
+        // Mensaje final para concertar cita
         await new Promise(r => setTimeout(r, 2500))
-        await sockActual.sendMessage(jid, { text: MSG_AGENDAR_CITA })
-        if (leadId) await log(leadId, 'Mensaje Saliente Bot', MSG_AGENDAR_CITA)
+        await sockActual.sendMessage(jid, { text: MSG_CONCERTAR_CITA })
+        if (leadId) await log(leadId, 'Mensaje Saliente Bot', MSG_CONCERTAR_CITA)
 
         console.log(`✅ [VAPI] Flujo completo → ${soloDigitos}`)
 
