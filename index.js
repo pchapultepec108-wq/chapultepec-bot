@@ -630,7 +630,7 @@ Te mando las fotos ahora mismo 📸`
           continue
         }
 
-        // Detectar confirmación de día y/o hora
+        // Detectar confirmación de día y/o hora (PRIMERO — más específico)
         const confirmaDia = /lunes|martes|mi[eé]rcoles|jueves|viernes|s[aá]bado|domingo|ma[ñn]ana|pasado|esta semana|siguiente|pr[oó]ximo|tarde|ma[ñn]ana por|hoy|\b\d{1,2}(:\d{2})?\s*(am|pm|hrs?)/i.test(texto)
         if (confirmaDia) {
           await send(MSG_CONFIRMAR_CITA)
@@ -638,18 +638,18 @@ Te mando las fotos ahora mismo 📸`
           continue
         }
 
-        // Detectar intención de agendar (quiere visitar pero no dio día)
-        const quiereVisitar = /s[íi]\b|claro|dale|me interesa|quiero|me gustar[íi]a|cu[aá]ndo|a qu[eé] hora|disponibilidad|visita|conocer|ver|ir/i.test(texto)
-        if (quiereVisitar) {
-          await send(MSG_PEDIR_DIA)
-          continue
-        }
-
-        // Detectar rechazo
-        const rechaza = /no (me )?interesa|ya tengo|no por ahora|no gracias|otro momento|despu[eé]s/i.test(texto)
+        // Detectar rechazo (ANTES de quiereVisitar — "no me interesa" tiene "interesa")
+        const rechaza = /no (me )?interesa|no gracias|ya no|ya tengo|no por ahora|otro momento|despu[eé]s|no quiero/i.test(texto)
         if (rechaza) {
           await send(`Entendido, sin problema 🙏\n\nCuando quieras retomar la búsqueda de tu hogar ideal en Cuernavaca, aquí estaré. ¡Que tengas excelente día!`)
           await supabase.from('leads').update({ estado: 'No Interesado' }).eq('id', leadId)
+          continue
+        }
+
+        // Detectar intención de agendar (quiere visitar pero no dio día)
+        const quiereVisitar = /^s[íi]$|claro|dale|me interesa|quiero|me gustar[íi]a|cu[aá]ndo|a qu[eé] hora|disponibilidad|visita|conocer|ir a ver/i.test(texto)
+        if (quiereVisitar) {
+          await send(MSG_PEDIR_DIA)
           continue
         }
 
@@ -663,7 +663,7 @@ Te mando las fotos ahora mismo 📸`
 
       // ══ ETAPA 3: Aún no tiene fotos ══════════════════════════════════
 
-      const pideFotos = /foto|imagen|ver|manda|env[íi]a|s[íi]\b|dale|claro|info|cu[eé]ntame|muestrame|muéstrame/i.test(texto)
+      const pideFotos = /foto|imagen|ver foto|ver im[aá]gen|manda|env[íi]a|s[íi]\b|dale|claro|info|cu[eé]ntame|muestrame|mu[eé]strame|quiero ver|ver las/i.test(texto)
 
       if (pideFotos) {
         await send(`¡Aquí van las fotos del Penthouse! 📸`)
