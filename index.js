@@ -6,12 +6,17 @@ const makeWASocket = pkg.default?.makeWASocket || pkg.makeWASocket
 const { DisconnectReason, useMultiFileAuthState, fetchLatestBaileysVersion } = pkg
 import { createClient } from '@supabase/supabase-js'
 import qrcode from 'qrcode-terminal'
+import QRCode from 'qrcode'
 import pino from 'pino'
 import { readFileSync, existsSync } from 'fs'
 import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
 import { createServer } from 'http'
 import 'dotenv/config'
+
+// QR global — se actualiza cada vez que Baileys genera uno nuevo
+let QR_ACTUAL = null
+let WA_CONECTADO = false
 
 const __dir = dirname(fileURLToPath(import.meta.url))
 const FOTOS_DIR = join(__dir, 'fotos')
@@ -385,13 +390,17 @@ async function iniciar() {
 
   sock.ev.on('connection.update', ({ connection, lastDisconnect, qr }) => {
     if (qr) {
+      QR_ACTUAL = qr
+      WA_CONECTADO = false
       console.log('\n══════════════════════════════════════════')
-      console.log('  Escanea con WhatsApp del 777 175 8412')
+      console.log('  Escanea QR en: /qr')
       console.log('══════════════════════════════════════════\n')
       qrcode.generate(qr, { small: true })
     }
     if (connection === 'open') {
       intentosReconexion = 0
+      QR_ACTUAL = null
+      WA_CONECTADO = true
       console.log('\n✅ Bot Ana ACTIVO — Parque Chapultepec')
       console.log(`   Modo: ${USA_IA ? 'Claude Haiku (IA)' : 'Reglas inteligentes'}`)
       console.log('   Interceptando llamadas y mensajes...\n')
@@ -979,6 +988,41 @@ const crmServer = createServer(async (req, res) => {
     res.writeHead(204, { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET,POST', 'Access-Control-Allow-Headers': 'Content-Type' })
     res.end(); return
   }
+  // GET /qr — página HTML con el QR de WhatsApp para escanear
+  if (req.url === '/qr') {
+    if (WA_CONECTADO) {
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' })
+      res.end(`<html><body style="font-family:sans-serif;text-align:center;padding:60px;background:#f0fdf4">
+        <h2 style="color:#166534">✅ WhatsApp ya está conectado</h2>
+        <p>El bot está activo y respondiendo mensajes.</p>
+      </body></html>`)
+      return
+    }
+    if (!QR_ACTUAL) {
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' })
+      res.end(`<html><head><meta http-equiv="refresh" content="5"></head>
+        <body style="font-family:sans-serif;text-align:center;padding:60px">
+        <h2>⏳ Generando QR...</h2>
+        <p>Esta página se recarga automáticamente cada 5 segundos.</p>
+      </body></html>`)
+      return
+    }
+    try {
+      const qrDataUrl = await QRCode.toDataURL(QR_ACTUAL, { width: 400, margin: 2 })
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' })
+      res.end(`<html><head><meta http-equiv="refresh" content="30"></head>
+        <body style="font-family:sans-serif;text-align:center;padding:40px;background:#fafafa">
+        <h2>📱 Escanea con WhatsApp</h2>
+        <p style="color:#666">Abre WhatsApp → Dispositivos vinculados → Vincular dispositivo</p>
+        <img src="${qrDataUrl}" style="border:4px solid #e5e7eb;border-radius:12px;margin:20px 0"/>
+        <p style="color:#999;font-size:13px">El QR expira en ~60s. La página se recarga automáticamente.</p>
+      </body></html>`)
+    } catch(e) {
+      res.writeHead(500); res.end('Error generando QR: ' + e.message)
+    }
+    return
+  }
+
   if (req.url.startsWith('/api/') || req.url.startsWith('/oauth/')) {
     const handled = await apiRouter(req, res)
     if (handled) return
