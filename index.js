@@ -226,32 +226,6 @@ El departamento 4° piso ya fue vendido. Solo queda el PH.
 
 const TEXTO_PH = `🌟 *Penthouse · Parque Chapultepec · Última unidad*
 
-📐 *234 m²* de residencia + *86 m²* de Roof Garden privado
-
-🏡 *Espacios:*
-• Sala-comedor con ventanal y muro galería
-• Cocina abierta con isla de granito · línea blanca oculta
-• 3 recámaras · vestidor de diseño en recámara principal
-• 3.5 baños tipo spa · travertino · grifería negra mate · regadera lluvia
-• Área de lavado independiente
-
-🌿 *Roof Garden 86 m²:*
-• Deck de parota bajo pérgola
-• Jacuzzi privado con vista panorámica a la sierra de Morelos
-• Asador BBQ · sala exterior · jardín vivo
-• Vista a las montañas · frente al Parque Chapultepec
-
-✨ *Materiales nobles:*
-Parota · Granito · Travertino · Latón cepillado · Blanco arquitectónico
-
-🏗️ *Tecnología:*
-Casa inteligente: luces, clima y persianas por teléfono o voz
-
-📈 *Inversión inteligente:*
-• ROI proyectado: 8-12% anual
-• Zona de alta plusvalía · Cuernavaca crece
-• Proyecto 100% terminado · Sin costo adicional
-
 💰 *$4,500,000 MXN · Entrega inmediata*`
 
 const TEXTO_CTA = `📍 *Agenda tu visita privada*
