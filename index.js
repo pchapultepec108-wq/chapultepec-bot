@@ -353,6 +353,48 @@ function detectarInteres(t) {
   return null
 }
 
+// ── Mensajes de agendado de cita ─────────────────────────────────────────────
+
+const MSG_AGENDAR_CITA = `¿Te gustaría conocerlo en persona? 📅
+
+Atendemos *lunes a sábado*, mañana o tarde, con cita previa.
+
+👉 ¿Qué día te acomoda esta semana?
+
+1️⃣ Mañana
+2️⃣ Este fin de semana
+3️⃣ Entre semana (lunes a viernes)
+
+Responde con el número o dime directamente el día y hora 🗓️`
+
+const MSG_PEDIR_DIA = `¡Perfecto! 🙌
+
+¿Qué día y hora te quedan mejor?
+
+📍 *Bajada de Chapultepec 18-A*, Cuernavaca
+⏰ Horarios: lunes a sábado, 10am – 6pm
+
+Dime el día y te confirmo de inmediato 😊`
+
+const MSG_CONFIRMAR_CITA = `✅ *¡Visita confirmada!*
+
+Te esperamos en:
+📍 *Bajada de Chapultepec 18-A*
+Col. Chapultepec, Cuernavaca, Morelos
+_(a 50 metros del Parque Chapultepec)_
+
+📞 Si necesitas cambiar el horario: 777 175 84 12
+🗺️ https://maps.app.goo.gl/chapultepec18A
+
+Te mandaremos un recordatorio el día anterior. ¿Tienes alguna pregunta antes de tu visita? 😊`
+
+const MSG_RECORDATORIO_CITA = `Ya tienes tu visita agendada al *Penthouse Parque Chapultepec* 🏠✅
+
+📍 Bajada de Chapultepec 18-A, Cuernavaca
+📞 777 175 84 12
+
+¿Tienes alguna pregunta o necesitas cambiar el horario?`
+
 // ── WhatsApp ──────────────────────────────────────────────────────────────────
 
 let intentosReconexion = 0
@@ -569,45 +611,52 @@ Te mando las fotos ahora mismo 📸`
 
       // ══ ETAPA 1: Primer contacto ══════════════════════════════════════
       if (esPrimerMensaje) {
-        await send(`¡Hola! 👋 Soy Ana de *Parque Chapultepec*, Cuernavaca.\n\nTenemos disponibles:\n🌟 *Penthouse — $4,500,000 MXN* · 3 suites · Roof Garden 86 m² + jacuzzi\n🏙️ *Depto 4° piso — $2,800,000 MXN* · 2 recámaras · Roofgarden privado\n\nTe mando las fotos ahora mismo 📸`)
+        await send(`¡Hola! 👋 Soy Ana de *Parque Chapultepec*, Cuernavaca.\n\n⚠️ Solo queda *1 unidad disponible*:\n🌟 *Penthouse — $4,500,000 MXN*\n336 m² · Roof Garden 86 m² · Jacuzzi · 3 suites · Elevador privado\n\nTe mando las fotos ahora mismo 📸`)
         await new Promise(r => setTimeout(r, 1500))
         await enviarFotos()
-        await new Promise(r => setTimeout(r, 2000))
-        await send(`¿Cuándo te gustaría visitarlo? 📅 Atendemos lunes a sábado — mañana o tarde.`)
+        await new Promise(r => setTimeout(r, 2500))
+        await send(MSG_AGENDAR_CITA)
         continue
       }
 
       // ══ ETAPA 2: Ya recibió fotos → seguimiento a visita ═════════════
       if (fotosYaEnviadas) {
         if (citaAgendada) {
-          // Ya tiene cita → respuesta IA contextual
+          // Ya tiene cita → IA responde dudas, pero recuerda los datos de la visita
           let resp
-          try { resp = USA_IA ? await respuestaIA(leadId, texto) : '¿Tienes alguna pregunta sobre tu visita? 😊' }
-          catch { resp = '¿Tienes alguna pregunta sobre tu visita? 😊' }
+          try { resp = USA_IA ? await respuestaIA(leadId, texto) : MSG_RECORDATORIO_CITA }
+          catch { resp = MSG_RECORDATORIO_CITA }
           await send(resp)
           continue
         }
 
-        // Detectar confirmación de día/hora
-        const confirmaDia = /lunes|martes|mi[eé]rcoles|jueves|viernes|s[aá]bado|domingo|ma[ñn]ana|tarde|hoy|\b\d{1,2}(:\d{2})?\s*(am|pm|hrs?)/i.test(texto)
+        // Detectar confirmación de día y/o hora
+        const confirmaDia = /lunes|martes|mi[eé]rcoles|jueves|viernes|s[aá]bado|domingo|ma[ñn]ana|pasado|esta semana|siguiente|pr[oó]ximo|tarde|ma[ñn]ana por|hoy|\b\d{1,2}(:\d{2})?\s*(am|pm|hrs?)/i.test(texto)
         if (confirmaDia) {
-          await send(`Perfecto, anotado 📅\n\n*Visita confirmada al Penthouse Parque Chapultepec.*\nDirección: Bajada de Chapultepec 18-A, Cuernavaca.\n\nTe mandamos recordatorio antes de tu visita. ¿Alguna pregunta adicional?`)
-          await supabase.from('leads').update({ estado: 'Cita Agendada' }).eq('id', leadId)
+          await send(MSG_CONFIRMAR_CITA)
+          await supabase.from('leads').update({ estado: 'Cita Agendada', fecha_cita: new Date().toISOString() }).eq('id', leadId)
+          continue
+        }
+
+        // Detectar intención de agendar (quiere visitar pero no dio día)
+        const quiereVisitar = /s[íi]\b|claro|dale|me interesa|quiero|me gustar[íi]a|cu[aá]ndo|a qu[eé] hora|disponibilidad|visita|conocer|ver|ir/i.test(texto)
+        if (quiereVisitar) {
+          await send(MSG_PEDIR_DIA)
           continue
         }
 
         // Detectar rechazo
-        const rechaza = /no (me )?interesa|ya tengo|no por ahora|no gracias/i.test(texto)
+        const rechaza = /no (me )?interesa|ya tengo|no por ahora|no gracias|otro momento|despu[eé]s/i.test(texto)
         if (rechaza) {
-          await send(`Entendido, sin problema 🙏 Si en algún momento quieres saber más, aquí estaré. ¡Que tengas excelente día!`)
+          await send(`Entendido, sin problema 🙏\n\nCuando quieras retomar la búsqueda de tu hogar ideal en Cuernavaca, aquí estaré. ¡Que tengas excelente día!`)
           await supabase.from('leads').update({ estado: 'No Interesado' }).eq('id', leadId)
           continue
         }
 
         // Cualquier otro mensaje post-fotos → IA contextual + empujar a visita
         let resp
-        try { resp = USA_IA ? await respuestaIA(leadId, texto) : `¿Qué día te acomoda para la visita? 📅 Tenemos disponibilidad esta semana.` }
-        catch { resp = `¿Qué día te acomoda para la visita? 📅 Tenemos disponibilidad esta semana.` }
+        try { resp = USA_IA ? await respuestaIA(leadId, texto) : MSG_AGENDAR_CITA }
+        catch { resp = MSG_AGENDAR_CITA }
         await send(resp)
         continue
       }
@@ -617,12 +666,11 @@ Te mando las fotos ahora mismo 📸`
       const pideFotos = /foto|imagen|ver|manda|env[íi]a|s[íi]\b|dale|claro|info|cu[eé]ntame|muestrame|muéstrame/i.test(texto)
 
       if (pideFotos) {
-        // Mandar fotos DE INMEDIATO sin pasar por IA
         await send(`¡Aquí van las fotos del Penthouse! 📸`)
         await new Promise(r => setTimeout(r, 800))
         await enviarFotos()
         await new Promise(r => setTimeout(r, 2500))
-        await send(`¿Cuándo te gustaría visitarlo? 📅 Atendemos lunes a sábado — mañana o tarde.`)
+        await send(MSG_AGENDAR_CITA)
         continue
       }
 
@@ -776,6 +824,11 @@ Si lo prefieres, puedes responderme por este chat y te atenderé personalmente. 
             console.log(`📸 [VAPI] Fotos enviadas → ${soloDigitos}`)
           }
         }
+
+        // Mensaje final para agendar visita
+        await new Promise(r => setTimeout(r, 2500))
+        await sockActual.sendMessage(jid, { text: MSG_AGENDAR_CITA })
+        if (leadId) await log(leadId, 'Mensaje Saliente Bot', MSG_AGENDAR_CITA)
 
         console.log(`✅ [VAPI] Flujo completo → ${soloDigitos}`)
 
