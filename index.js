@@ -395,6 +395,55 @@ const MSG_RECORDATORIO_CITA = `Tienes tu visita agendada al *Penthouse Parque Ch
 let intentosReconexion = 0
 let sockActual = null  // referencia global para cerrar antes de reconectar
 
+// ── Auth state persistente en Supabase ───────────────────────────────────────
+// Reemplaza useMultiFileAuthState — sobrevive reinicios de Render
+async function useSupabaseAuthState() {
+  const { BufferJSON, initAuthCreds } = await import('@whiskeysockets/baileys')
+
+  async function readData(id) {
+    const { data } = await supabase.from('wa_session').select('data').eq('id', id).single()
+    if (!data) return null
+    return JSON.parse(JSON.stringify(data.data), BufferJSON.reviver)
+  }
+
+  async function writeData(id, value) {
+    const json = JSON.parse(JSON.stringify(value, BufferJSON.replacer))
+    await supabase.from('wa_session').upsert({ id, data: json, updated_at: new Date().toISOString() }, { onConflict: 'id' })
+  }
+
+  async function removeData(id) {
+    await supabase.from('wa_session').delete().eq('id', id)
+  }
+
+  const creds = await readData('creds') || initAuthCreds()
+
+  return {
+    state: {
+      creds,
+      keys: {
+        get: async (type, ids) => {
+          const result = {}
+          await Promise.all(ids.map(async id => {
+            const val = await readData(`${type}-${id}`)
+            if (val) result[id] = val
+          }))
+          return result
+        },
+        set: async (data) => {
+          await Promise.all(
+            Object.entries(data).flatMap(([type, entries]) =>
+              Object.entries(entries).map(([id, val]) =>
+                val ? writeData(`${type}-${id}`, val) : removeData(`${type}-${id}`)
+              )
+            )
+          )
+        }
+      }
+    },
+    saveCreds: () => writeData('creds', creds)
+  }
+}
+
 async function iniciar() {
   // Cerrar socket anterior antes de crear uno nuevo — evita el loop 440
   if (sockActual) {
@@ -403,7 +452,7 @@ async function iniciar() {
     await new Promise(r => setTimeout(r, 1000))
   }
 
-  const { state, saveCreds } = await useMultiFileAuthState('./auth_session')
+  const { state, saveCreds } = await useSupabaseAuthState()
   const { version }          = await fetchLatestBaileysVersion()
 
   const sock = makeWASocket({
@@ -446,10 +495,15 @@ async function iniciar() {
       const codigo = lastDisconnect?.error?.output?.statusCode
       intentosReconexion++
 
-      // Sesión loggedOut → necesita nuevo QR (no se puede recuperar)
+      // Sesión loggedOut → limpiar Supabase y pedir QR de nuevo
       if (codigo === DisconnectReason.loggedOut) {
-        console.log('⚠️  Sesión cerrada por WhatsApp. Escanea QR: node setup-qr.js')
-        process.exit(1)
+        console.log('⚠️  Sesión cerrada — limpiando y pidiendo QR de nuevo...')
+        WA_CONECTADO = false
+        QR_ACTUAL = null
+        // Borrar sesión vieja de Supabase para forzar QR limpio
+        await supabase.from('wa_session').delete().neq('id', '__placeholder__').catch(() => {})
+        setTimeout(iniciar, 3000)
+        return
       }
 
       // 440 = otro cliente tomó la sesión → salir limpio, LaunchAgent reinicia
