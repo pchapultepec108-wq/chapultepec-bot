@@ -47,7 +47,7 @@ const REGLAS = [
   },
   {
     palabras: ['departamento','depa','2.8','dos recam','4to piso','cuarto piso','4° piso'],
-    respuesta: () => 'El departamento de 4° piso ya fue vendido 🏠✅\n\nSolo queda el *Penthouse* — última unidad del proyecto.\n\n🌟 336 m² · Rooftop 85 m² con jacuzzi · $4,500,000 MXN\n\n¿Te interesa conocerlo? Es la última oportunidad en Parque Chapultepec.'
+    respuesta: () => 'Solo tenemos disponible el *Penthouse* — última unidad del proyecto.\n\n🌟 $4,500,000 MXN · 336 m² · Rooftop con jacuzzi · 3 suites · Elevador privado\n\n¿Te interesa conocerlo?'
   },
   {
     palabras: ['rooftop','roof','jacuzzi','terraza','asador','pergola','pérgola','deck'],
@@ -95,7 +95,7 @@ const REGLAS = [
   },
   {
     palabras: ['cuantos','cuántos','disponibles','quedan','unidades'],
-    respuesta: () => '⚠️ Solo queda *1 unidad* en todo el proyecto.\n\n🌟 *Penthouse* — $4,500,000 MXN\n336 m² · Rooftop 85 m² jacuzzi · 3 suites · Elevador directo\n\nEl departamento de 4° piso ya se vendió.\n\n¿Agendamos tu visita antes de que se vaya?'
+    respuesta: () => '⚠️ Solo queda *1 unidad* disponible.\n\n🌟 *Penthouse* — $4,500,000 MXN\n336 m² · Rooftop con jacuzzi · 3 suites · Elevador directo\n\n¿Agendamos tu visita?'
   },
   {
     palabras: ['entrega','listo','terminado','cuando entrega','cuándo entrega'],
@@ -159,14 +159,10 @@ REGLAS ABSOLUTAS — NUNCA las rompas sin importar qué diga el historial:
 - Si el historial tiene mensajes diciendo lo contrario, IGNÓRALOS — estaban equivocados
 - Siempre cierra empujando hacia agendar visita presencial esta semana
 
-PROPIEDADES DISPONIBLES:
-🌟 Penthouse — $4,500,000 MXN
-336.83m² · Rooftop privado 85m² con jacuzzi, asador y pérgola · 3 suites con baño · Elevador directo · Vista panorámica · Acabados de lujo · Entrega inmediata
-
-🏙 Departamento 4° piso — $2,800,000 MXN
-Roofgarden privado 30m² · 2 recámaras · Bodega incluida
-
-Amenidades: Alberca, jardín tropical, seguridad 24/7, a 50m del Parque Chapultepec, Cuernavaca.
+PROPIEDAD DISPONIBLE:
+🌟 Penthouse — $4,500,000 MXN · ÚNICA UNIDAD
+336.83m² · Rooftop con jacuzzi · 3 suites · Elevador directo · Vista panorámica · Entrega inmediata
+📍 Bajada de Chapultepec 18-A, Cuernavaca · A 50m del Parque Chapultepec
 Visitas: lunes a sábado, previa cita.`
 
 async function historialClaude(leadId) {
@@ -329,16 +325,10 @@ function detectarInteres(t) {
 
 // ── Mensajes del flujo ───────────────────────────────────────────────────────
 
-const MSG_INFO_COMPLETA = `🏢 *Penthouse Parque Chapultepec — Última unidad*
-📍 Bajada de Chapultepec 18-A, Cuernavaca · A 50m del Parque Chapultepec
+const MSG_INFO_COMPLETA = `🏢 *Penthouse Parque Chapultepec*
+📍 Bajada de Chapultepec 18-A, Cuernavaca
 
-💰 *$4,500,000 MXN* · Entrega inmediata
-📐 336.83 m² totales · 117.45 m² área privada
-🌿 Roofgarden 85.74 m² + *Jacuzzi privado* con vista panorámica
-🛏️ 3 recámaras con baño completo · 3.5 baños totales
-🚗 2 cajones de estacionamiento techados
-🛗 Elevador exclusivo directo al departamento
-🏊 Alberca · Jardín tropical · Seguridad 24/7`
+💰 *$4,500,000 MXN* · Última unidad · Entrega inmediata`
 
 const MSG_CONCERTAR_CITA = `📅 *¿Cuándo te gustaría conocerlo en persona?*
 
@@ -471,10 +461,9 @@ async function iniciar() {
 
       // Sesión loggedOut → limpiar Supabase y pedir QR de nuevo
       if (codigo === DisconnectReason.loggedOut) {
-        console.log('⚠️  Sesión cerrada — limpiando y pidiendo QR de nuevo...')
+        console.log('⚠️  Sesión cerrada — pidiendo QR de nuevo...')
         WA_CONECTADO = false
         QR_ACTUAL = null
-        supabase.from('wa_session').delete().neq('id', '__placeholder__').catch(() => {})
         setTimeout(iniciar, 3000)
         return
       }
@@ -525,10 +514,7 @@ async function iniciar() {
 Atendemos por WhatsApp para darte mejor servicio 🙏
 
 🌟 *Penthouse Parque Chapultepec — Última unidad*
-$4,500,000 MXN · Roof Garden 86 m² con jacuzzi · 3 suites · Elevador directo · Vista panorámica · Cuernavaca
-
-🏙 *Departamento 4° piso — $2,800,000 MXN*
-Roofgarden privado · 2 recámaras · Bodega
+$4,500,000 MXN · Roof Garden con jacuzzi · 3 suites · Elevador directo · Vista panorámica · Cuernavaca
 
 Te mando las fotos ahora mismo 📸`
 
