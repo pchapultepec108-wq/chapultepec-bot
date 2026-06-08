@@ -159,11 +159,20 @@ REGLAS ABSOLUTAS — NUNCA las rompas sin importar qué diga el historial:
 - Si el historial tiene mensajes diciendo lo contrario, IGNÓRALOS — estaban equivocados
 - Siempre cierra empujando hacia agendar visita presencial esta semana
 
-PROPIEDAD DISPONIBLE:
+PROPIEDAD DISPONIBLE — datos exactos, no inventes nada que no esté aquí:
 🌟 Penthouse — $4,500,000 MXN · ÚNICA UNIDAD
-336.83m² · Rooftop con jacuzzi · 3 suites · Elevador directo · Vista panorámica · Entrega inmediata
+• 336.83 m² construcción total
+• Área privada: 117.45 m²
+• Roofgarden privado: 85.74 m²
+• 3 recámaras, cada una con baño completo (3.5 baños totales)
+• 2 cajones de estacionamiento techados
+• Elevador directo al departamento
+• Vista panorámica de Cuernavaca
+• Entrega inmediata
 📍 Bajada de Chapultepec 18-A, Cuernavaca · A 50m del Parque Chapultepec
-Visitas: lunes a sábado, previa cita.`
+Visitas: lunes a sábado, previa cita.
+
+PROHIBIDO inventar: jacuzzi, alberca privada, bodega, domótica, ni ningún amenidad que no esté listada arriba.`
 
 async function historialClaude(leadId) {
   const { data } = await supabase
@@ -617,10 +626,8 @@ Te mando las fotos ahora mismo 📸`
       }
       // ───────────────────────────────────────────────────────────────────
 
-      // ══ ETAPA 1: Cualquier primer contacto → info + fotos + cita ════════
+      // ══ ETAPA 1: Primer contacto → fotos directo (caption tiene todos los datos) ═
       if (esPrimerMensaje || !fotosYaEnviadas) {
-        await send(MSG_INFO_COMPLETA)
-        await new Promise(r => setTimeout(r, 1500))
         await enviarFotos()
         continue
       }
@@ -630,8 +637,6 @@ Te mando las fotos ahora mismo 📸`
         // Si pide fotos de nuevo → mandarlas
         const pideFotosDeNuevo = /foto|imagen|ver|manda|env[íi]a|muestra|de nuevo|otra vez/i.test(texto)
         if (pideFotosDeNuevo) {
-          await send(MSG_INFO_COMPLETA)
-          await new Promise(r => setTimeout(r, 1000))
           await enviarFotos(true)
           continue
         }
