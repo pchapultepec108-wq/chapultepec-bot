@@ -426,7 +426,7 @@ async function iniciar() {
     await new Promise(r => setTimeout(r, 1000))
   }
 
-  const { state, saveCreds } = await useSupabaseAuthState()
+  const { state, saveCreds } = await useMultiFileAuthState('./auth_session')
   const { version }          = await fetchLatestBaileysVersion()
 
   const sock = makeWASocket({
