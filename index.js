@@ -739,35 +739,39 @@ async function apiRouter(req, res) {
     req.on('end', async () => {
       try {
         const data = JSON.parse(body || '{}')
+        console.log('[VAPI] payload:', JSON.stringify(data).substring(0, 300))
 
-        // ── 1. Respuesta inmediata a Vapi para terminar la llamada ──────────
-        // Vapi espera esta respuesta antes de continuar; colgar = costo mínimo
+        // ── 1. Respuesta inmediata a Vapi para colgar la llamada ─────────────
+        // Vapi requiere respuesta antes de continuar; colgar aquí = costo mínimo
+        const toolCallId = data?.message?.toolCallList?.[0]?.id
+          || data?.message?.call?.id
+          || 'hangup'
         res.writeHead(200, JSON_H)
         res.end(JSON.stringify({
-          results: [{ toolCallId: data?.message?.toolCallList?.[0]?.id || 'hangup', result: 'hangup' }]
+          results: [{ toolCallId, result: 'hangup' }]
         }))
 
-        // ── 2. Extraer teléfono del payload de Vapi ─────────────────────────
-        // Vapi envía: message.call.customer.number  |  message.customer.number
-        // También soportamos formatos legacy (From, caller, telefono)
+        // ── 2. Extraer teléfono del payload ─────────────────────────────────
+        // Vapi puede enviar el número en varios niveles del objeto
         const rawNum =
           data?.message?.call?.customer?.number ||
           data?.message?.customer?.number       ||
           data?.call?.customer?.number          ||
+          data?.customer?.number                ||
           data?.From || data?.from || data?.caller || data?.telefono || ''
 
-        // Limpiar: quitar +, espacios, guiones → solo dígitos
+        // Solo dígitos — elimina +, espacios, guiones, @lid, @s.whatsapp.net
         const soloDigitos = rawNum.replace(/[^\d]/g, '')
         if (!soloDigitos) {
-          console.log('[VAPI] No se pudo extraer teléfono del payload:', JSON.stringify(data).substring(0, 200))
+          console.log('[VAPI] ⚠️  Número no encontrado en payload')
           return
         }
 
-        // Construir JID válido para Baileys (sin @lid)
+        // JID válido para Baileys — siempre @s.whatsapp.net, nunca @lid
         const jid = `${soloDigitos}@s.whatsapp.net`
-        console.log(`📞 [VAPI] Llamada de ${soloDigitos} → enviando WhatsApp`)
+        console.log(`📞 [VAPI] Llamada de ${soloDigitos} → enviando ficha por WhatsApp`)
 
-        // ── 3. Upsert lead en Supabase ──────────────────────────────────────
+        // ── 3. Registrar lead en Supabase ────────────────────────────────────
         const leadData = await upsertLead(soloDigitos, {
           canal_origen: 'Llamada telefónica',
           estado: 'Nuevo',
@@ -775,31 +779,43 @@ async function apiRouter(req, res) {
         })
         const leadId = leadData?.id
         if (leadId) {
-          await log(leadId, 'Llamada Rescatada', 'Llamada telefónica vía Vapi — ficha técnica enviada por WhatsApp')
+          await log(leadId, 'Llamada Rescatada', 'Llamada telefónica vía Vapi', {
+            nota: 'Ficha del PH enviada por WhatsApp',
+            origen: 'vapi',
+          })
         }
 
-        // ── 4. Enviar WhatsApp via Baileys ──────────────────────────────────
+        // ── 4. Enviar ficha técnica por WhatsApp (Baileys) ───────────────────
         if (!sockActual || !WA_CONECTADO) {
-          console.log('[VAPI] ⚠️  WhatsApp no conectado — no se pudo enviar mensaje')
+          console.log('[VAPI] ⚠️  WhatsApp no conectado — lead guardado, mensaje pendiente')
           return
         }
 
-        await sockActual.sendMessage(jid, { text: MSG_INFO_COMPLETA })
-        if (leadId) await log(leadId, 'Mensaje Saliente Bot', MSG_INFO_COMPLETA)
+        const MSG_FICHA_VAPI = `¡Hola! 🏢 Gracias por tu interés en nuestro Penthouse Exclusivo en Cuernavaca (a 50m del Parque Chapultepec).
 
-        // Enviar fotos del PH si no las ha recibido antes
-        const fotosEnviadas = leadId ? await yaEnvioFotos(leadId) : false
-        if (!fotosEnviadas) {
-          await new Promise(r => setTimeout(r, 2000))
-          const ok = await enviarSecuencia(sockActual, jid, 'ph')
-          if (ok && leadId) {
-            await log(leadId, 'Mensaje Saliente Bot', '[FOTOS PH]')
-            console.log(`📸 [VAPI] Fotos enviadas → ${soloDigitos}`)
-          }
-        }
+Para darte una atención inmediata y que puedas revisar los detalles en alta definición, aquí tienes la información de la ÚLTIMA UNIDAD DISPONIBLE:
 
+💰 Precio Total: $4,500,000 MXN
+📐 Construcción Total: 336.83 m²
+📐 Área Privada: 117.45 m²
+🌿 Roofgarden Privado: 85.74 m²
+🛏️ Distribución: 3 Recámaras (cada una con su propio baño completo) y 3.5 baños totales
+🚗 Estacionamiento: 2 cajones techados
+🛗 Acceso: Elevador directo al departamento con espectacular vista panorámica
 
-        console.log(`✅ [VAPI] Flujo completo → ${soloDigitos}`)
+📸 Ver Galería de Fotos y Ficha Técnica: https://parque-chapultepec.vercel.app
+📱 Síguenos en Instagram: https://www.instagram.com/pchapultepec
+📅 ¿Te gustaría conocerlo? Agenda una visita personalizada directamente aquí para elegir tu horario: https://parque-chapultepec.vercel.app
+
+Si lo prefieres, puedes responderme por este chat y te atenderé personalmente. ¡Quedamos a tus órdenes!`
+
+        await sockActual.sendMessage(jid, { text: MSG_FICHA_VAPI })
+        if (leadId) await log(leadId, 'Mensaje Saliente Bot', MSG_FICHA_VAPI, {
+          nota: 'Ficha del PH enviada por WhatsApp',
+          origen: 'vapi',
+        })
+
+        console.log(`✅ [VAPI] Ficha enviada → ${soloDigitos}`)
 
       } catch (e) {
         console.error('[VAPI] Error:', e.message)
