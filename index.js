@@ -662,15 +662,18 @@ Te mando las fotos ahora mismo 📸`
           continue
         }
 
-        // Cualquier otro mensaje → empujar a confirmar cita
-        await send(MSG_CONCERTAR_CITA)
+        // Cualquier otro mensaje → IA responde naturalmente
+        let respIA
+        try { respIA = USA_IA ? await respuestaIA(leadId, texto) : respuestaReglas(texto) }
+        catch { respIA = respuestaReglas(texto) }
+        await send(respIA)
         continue
       }
 
-      // Fallback (no debería llegar aquí)
+      // Fallback
       let respuesta
-      try { respuesta = USA_IA ? await respuestaIA(leadId, texto) : MSG_CONCERTAR_CITA }
-      catch { respuesta = MSG_CONCERTAR_CITA }
+      try { respuesta = USA_IA ? await respuestaIA(leadId, texto) : respuestaReglas(texto) }
+      catch { respuesta = respuestaReglas(texto) }
 
       await send(respuesta)
       console.log(`🤖 → ${respuesta.substring(0, 80)}`)
