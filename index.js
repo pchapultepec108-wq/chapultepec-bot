@@ -474,8 +474,7 @@ async function iniciar() {
         console.log('⚠️  Sesión cerrada — limpiando y pidiendo QR de nuevo...')
         WA_CONECTADO = false
         QR_ACTUAL = null
-        // Borrar sesión vieja de Supabase para forzar QR limpio
-        await supabase.from('wa_session').delete().neq('id', '__placeholder__').catch(() => {})
+        supabase.from('wa_session').delete().neq('id', '__placeholder__').catch(() => {})
         setTimeout(iniciar, 3000)
         return
       }
