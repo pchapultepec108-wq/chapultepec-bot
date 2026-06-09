@@ -21,7 +21,7 @@ node_modules/
 nohup.out
 
 # Fotos y activos binarios pesados
-fotos/
+# fotos/
 
 # Puppeteer cache
 .cache/
