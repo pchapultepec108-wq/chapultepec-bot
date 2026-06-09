@@ -721,12 +721,25 @@ tbody tr:hover td { background: #FAFBFC; }
       <div class="metric m-purple"><div class="m-num" id="m-hoy">—</div><div class="m-lbl">Conversaciones hoy</div></div>
       <div class="metric m-orange"><div class="m-num" id="m-tasa">—</div><div class="m-lbl">Tasa de respuesta</div></div>
     </div>
+
+    <!-- Panel de actividad reciente -->
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-head">
+        <span class="card-title"><span class="card-title-dot dot-green"></span>Actividad reciente</span>
+        <span style="font-size:11px;color:var(--tx3)" id="m-refresh-ts">Actualiza cada 30s</span>
+      </div>
+      <div id="m-actividad" style="max-height:280px;overflow-y:auto;padding:4px 0">
+        <div class="empty">Cargando…</div>
+      </div>
+    </div>
+
+    <!-- Tabla de conversaciones -->
     <div class="card">
       <div class="card-head">
-        <span class="card-title"><span class="card-title-dot dot-blue"></span>Central de conversaciones</span>
+        <span class="card-title"><span class="card-title-dot dot-blue"></span>Conversaciones</span>
         <select class="sel" id="m-canal" onchange="filtrarMsgs()">
           <option value="">Todos los canales</option>
-          <option>WhatsApp</option><option>Instagram</option><option>Facebook</option>
+          <option>WhatsApp</option><option>Llamada</option>
         </select>
       </div>
       <table>
@@ -1318,7 +1331,41 @@ function renderMensajes() {
   document.getElementById('m-respondidos').textContent = resp
   document.getElementById('m-hoy').textContent        = hoyC
   document.getElementById('m-tasa').textContent       = ent>0 ? Math.min(100,Math.round(resp/ent*100))+'%' : '—'
+  renderActividad()
   renderMensajesTabla(LEADS)
+  const ts = document.getElementById('m-refresh-ts')
+  if (ts) ts.textContent = 'Actualizado ' + hr(new Date())
+}
+
+function renderActividad() {
+  const el = document.getElementById('m-actividad'); if (!el) return
+  // Últimos 30 mensajes de todos los contactos, ordenados por fecha
+  const recientes = [...INTS]
+    .filter(i => !(i.contenido||'').startsWith('[FOTOS') && (i.contenido||'').trim().length > 2)
+    .sort((a,b) => new Date(b.creado_en) - new Date(a.creado_en))
+    .slice(0, 30)
+
+  if (!recientes.length) { el.innerHTML = '<div class="empty">Sin actividad</div>'; return }
+
+  el.innerHTML = recientes.map(i => {
+    const lead = LEADS.find(l => l.id === i.lead_id)
+    const tel  = lead ? fmt(lead.telefono) : '—'
+    const esBot = i.tipo !== 'Mensaje Entrante'
+    const esLlamada = i.tipo === 'Llamada Rescatada'
+    const icono = esLlamada ? '📞' : esBot ? '🤖' : '👤'
+    const color = esLlamada ? 'var(--orange)' : esBot ? 'var(--blue)' : 'var(--green)'
+    const preview = (i.contenido||'').replace(/\*/g,'').substring(0, 80)
+    return `<div onclick="verChat('${i.lead_id}')" style="display:flex;align-items:flex-start;gap:10px;padding:8px 12px;border-bottom:1px solid var(--border2);cursor:pointer;transition:background .1s" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">
+      <span style="font-size:16px;flex-shrink:0;margin-top:1px">${icono}</span>
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">
+          <span style="font-weight:700;font-size:12px;color:${color}">${tel}</span>
+          <span style="font-size:10px;color:var(--tx3);white-space:nowrap;margin-left:8px">${dt(i.creado_en)}</span>
+        </div>
+        <div style="font-size:12px;color:var(--tx2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${preview||'[foto]'}</div>
+      </div>
+    </div>`
+  }).join('')
 }
 function renderMensajesTabla(leads) {
   document.getElementById('m-tabla').innerHTML = leads.filter(l => (l.msgs||[]).length>0).map(l => {
@@ -1532,21 +1579,49 @@ function renderReporte() {
 /* ══ MODAL CHAT ══ */
 function verChat(id) {
   const lead = LEADS.find(l => l.id===id); if (!lead) return
-  const msgs = (lead.msgs||[]).filter(m => !(m.contenido||'').startsWith('[FOTOS'))
+  const msgs = (lead.msgs||[])
+    .filter(m => !(m.contenido||'').startsWith('[FOTOS'))
+    .sort((a,b) => new Date(a.creado_en) - new Date(b.creado_en))
   const numFmt = fmt(lead.telefono)
   const numWA  = '52' + tel10(lead.telefono)
-  document.getElementById('modal-title').textContent = `Chat · ${numFmt} · ${lead.interes||'—'}`
+
+  document.getElementById('modal-title').innerHTML =
+    `<span style="font-weight:800">${numFmt}</span>
+     <span style="font-size:11px;color:var(--tx3);margin-left:8px">${lead.estado||''} · ${lead.interes||'—'} · ${msgs.length} mensajes</span>`
   document.getElementById('modal-wa-link').href = `https://wa.me/${numWA}`
-  document.getElementById('modal-body').innerHTML = msgs.length===0
-    ? '<div class="empty">Sin mensajes</div>'
-    : [...msgs].reverse().map(m => `
-      <div class="bbl ${m.tipo==='Mensaje Entrante'?'b-cli':'b-bot'}">
-        ${m.tipo!=='Mensaje Entrante'?'<div class="b-nm">Ana (Bot)</div>':''}
-        <div class="b-tx">${(m.contenido||'').replace(/</g,'&lt;')}</div>
-        <div class="b-ts">${dt(m.creado_en)}</div>
-      </div>`).join('')
+
+  if (msgs.length === 0) {
+    document.getElementById('modal-body').innerHTML = '<div class="empty" style="padding:40px">Sin mensajes registrados</div>'
+  } else {
+    let html = ''
+    let lastDate = ''
+    msgs.forEach(m => {
+      const d = new Date(m.creado_en).toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'})
+      if (d !== lastDate) {
+        html += `<div style="text-align:center;margin:12px 0"><span style="background:#e2e8f0;color:#64748b;font-size:10px;padding:3px 10px;border-radius:99px">${d}</span></div>`
+        lastDate = d
+      }
+      const esBot = m.tipo !== 'Mensaje Entrante'
+      const esLlamada = m.tipo === 'Llamada Rescatada'
+      const bg    = esLlamada ? '#fff7ed' : esBot ? '#eff6ff' : '#f0fdf4'
+      const bord  = esLlamada ? '#fed7aa' : esBot ? '#bfdbfe' : '#bbf7d0'
+      const align = esBot ? 'flex-end' : 'flex-start'
+      const label = esLlamada ? '📞 Llamada' : esBot ? '🤖 Bot' : '👤 Cliente'
+      const color = esLlamada ? '#c2410c' : esBot ? '#1d4ed8' : '#15803d'
+      const hora  = new Date(m.creado_en).toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'})
+      html += `<div style="display:flex;justify-content:${align};margin:4px 0">
+        <div style="max-width:78%;background:${bg};border:1px solid ${bord};border-radius:12px;padding:8px 12px;box-shadow:0 1px 2px rgba(0,0,0,.04)">
+          <div style="font-size:10px;font-weight:700;color:${color};margin-bottom:4px">${label}</div>
+          <div style="font-size:13px;color:#0f172a;white-space:pre-wrap;word-break:break-word;line-height:1.5">${(m.contenido||'').replace(/</g,'&lt;').replace(/\*(.*?)\*/g,'<strong>$1</strong>')}</div>
+          <div style="font-size:10px;color:#94a3b8;text-align:right;margin-top:4px">${hora}</div>
+        </div>
+      </div>`
+    })
+    document.getElementById('modal-body').innerHTML = `<div style="padding:12px 16px">${html}</div>`
+  }
+
   document.getElementById('modal').classList.add('open')
-  setTimeout(() => { const b=document.getElementById('modal-body'); b.scrollTop=b.scrollHeight }, 50)
+  setTimeout(() => { const b=document.getElementById('modal-body'); b.scrollTop=b.scrollHeight }, 80)
 }
 function cerrarModal() { document.getElementById('modal').classList.remove('open') }
 
