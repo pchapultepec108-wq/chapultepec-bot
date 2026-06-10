@@ -643,6 +643,33 @@ async function apiRouter(req, res) {
     return true
   }
 
+  // GET /api/leads — todos los leads (proxy server-side, evita cached egress en Supabase)
+  if (path === '/api/leads' && req.method === 'GET') {
+    try {
+      const { data } = await supabase.from('leads').select('*').order('creado_en', { ascending: false })
+      res.writeHead(200, JSON_H); res.end(JSON.stringify(data || []))
+    } catch (e) { res.writeHead(500, JSON_H); res.end(JSON.stringify({ error: e.message })) }
+    return true
+  }
+
+  // GET /api/interacciones — últimas 500 interacciones (proxy server-side)
+  if (path === '/api/interacciones' && req.method === 'GET') {
+    try {
+      const { data } = await supabase.from('interacciones').select('*').order('creado_en', { ascending: false }).limit(500)
+      res.writeHead(200, JSON_H); res.end(JSON.stringify(data || []))
+    } catch (e) { res.writeHead(500, JSON_H); res.end(JSON.stringify({ error: e.message })) }
+    return true
+  }
+
+  // GET /api/llamadas — llamadas rescatadas (proxy server-side)
+  if (path === '/api/llamadas' && req.method === 'GET') {
+    try {
+      const { data } = await supabase.from('llamadas_rescatadas').select('*').order('creado_en', { ascending: false })
+      res.writeHead(200, JSON_H); res.end(JSON.stringify(data || []))
+    } catch (e) { res.writeHead(500, JSON_H); res.end(JSON.stringify({ error: e.message })) }
+    return true
+  }
+
   // Buffer: obtener posts programados de todos los perfiles
   if (path === '/api/buffer-posts' && req.method === 'GET') {
     try {

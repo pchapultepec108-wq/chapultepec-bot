@@ -1174,10 +1174,11 @@ function renderPostsIn(id, posts) {
 /* ══ CARGA PRINCIPAL ══ */
 async function cargar() {
   try {
+    // Llamadas proxy a través del servidor Node.js — NO van directo a Supabase CDN
     const [l,c,i] = await Promise.all([
-      sbg(`${SB}/leads?select=*&order=creado_en.desc`),
-      sbg(`${SB}/llamadas_rescatadas?select=*&order=creado_en.desc`),
-      sbg(`${SB}/interacciones?select=*&order=creado_en.desc&limit=500`),
+      fetch(`${API}/api/leads`).then(r => r.json()),
+      fetch(`${API}/api/llamadas`).then(r => r.json()),
+      fetch(`${API}/api/interacciones`).then(r => r.json()),
     ])
     LEADS = Array.isArray(l) ? l : []
     CALLS = Array.isArray(c) ? c : []
