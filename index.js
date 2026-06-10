@@ -293,7 +293,7 @@ async function enviarSecuencia(sock, jid, tipo) {
 async function upsertLead(telefono, extras = {}) {
   const { data, error } = await supabase
     .from('leads').upsert({ telefono, ...extras }, { onConflict: 'telefono' })
-    .select('id, estado').single()
+    .select('id, estado, info_general_enviada, etapa_kanban').single()
   if (error) console.error('upsert:', error.message)
   return data
 }
@@ -589,30 +589,19 @@ Te mando las fotos ahora mismo 📸`
       const leadId = leadData?.id
       if (!leadId) continue
 
-      const esPrimerMensaje = !leadData || leadData.estado === 'Nuevo'
-      const fotosYaEnviadas = leadData?.fotos_enviadas === true || await yaEnvioFotos(leadId)
-      const citaAgendada    = leadData?.estado === 'Cita Agendada'
+      // info_general_enviada: columna booleana en DB — persiste entre reinicios del proceso
+      const infoEnviada  = leadData?.info_general_enviada === true
+      const citaAgendada = leadData?.estado === 'Cita Agendada'
 
       await supabase.from('leads').update({ estado: 'En Conversación' }).eq('id', leadId).eq('estado', 'Nuevo')
       await log(leadId, 'Mensaje Entrante', texto)
 
-      // ── Helpers ────────────────────────────────────────────────────────
-      async function enviarFotos(forzar = false) {
-        if (fotosYaEnviadas && !forzar) return
-        await supabase.from('leads').update({ interes: 'Penthouse' }).eq('id', leadId)
-        const ok = await enviarSecuencia(sock, jid, 'ph')
-        if (ok) {
-          await marcarFotosEnviadas(leadId)
-          await log(leadId, 'Mensaje Saliente Bot', '[FOTOS PH]')
-          console.log(`📸 Fotos → ${telefono}`)
-        }
-      }
-
+      // ── Helper send ───────────────────────────────────────────────────────
       async function send(msg) {
         await sock.sendMessage(jid, { text: msg })
         await log(leadId, 'Mensaje Saliente Bot', msg)
       }
-      // ───────────────────────────────────────────────────────────────────
+      // ─────────────────────────────────────────────────────────────────────
 
       // ── Detectar rechazo explícito ────────────────────────────────────────
       const rechaza = /no (me )?interesa|no gracias|ya no|ya tengo|no por ahora|no quiero/i.test(texto)
@@ -636,21 +625,26 @@ Te mando las fotos ahora mismo 📸`
         continue
       }
 
-      // ── Cualquier otro mensaje → siempre manda info + fotos ──────────────
-      await enviarFotos(true)
-
-      // Fallback (no se usa — kept para evitar errores en código posterior)
-      let respuesta
-      try { respuesta = USA_IA ? await respuestaIA(leadId, texto) : respuestaReglas(texto) }
-      catch { respuesta = respuestaReglas(texto) }
-
-      await send(respuesta)
-      console.log(`🤖 → ${respuesta.substring(0, 80)}`)
-
-      const hayInteres = /precio|costo|cu[aá]nto|penthouse|roof|jacuzzi|terraza|disponible|depto|departamento/i.test(texto)
-      if (hayInteres) {
+      // ── Flujo principal: primera vez → secuencia completa; después → IA ──
+      if (!infoEnviada) {
+        // Primera interacción: enviar info + fotos del PH
+        await send(MSG_INFO_COMPLETA)
         await new Promise(r => setTimeout(r, 1500))
-        await send(`¿Te mando las fotografías del penthouse ahora? Responde "sí" 📸`)
+        const ok = await enviarSecuencia(sock, jid, 'ph')
+        if (ok) {
+          await log(leadId, 'Mensaje Saliente Bot', '[FOTOS PH]')
+          await supabase.from('leads')
+            .update({ info_general_enviada: true, interes: 'Penthouse' })
+            .eq('id', leadId)
+          console.log(`📸 Secuencia PH enviada → ${telefono}`)
+        }
+      } else {
+        // Ya recibió la info → respuesta conversacional concisa (IA o reglas)
+        let respuesta
+        try { respuesta = USA_IA ? await respuestaIA(leadId, texto) : respuestaReglas(texto) }
+        catch { respuesta = respuestaReglas(texto) }
+        await send(respuesta)
+        console.log(`🤖 → ${respuesta.substring(0, 80)}`)
       }
     }
   })
@@ -822,7 +816,7 @@ Si lo prefieres, puedes responderme por este chat y te atenderé personalmente. 
     try {
       const { data: leads } = await supabase
         .from('leads')
-        .select('id, nombre, telefono, interes, estado, canal_origen, notas, fecha_cita, creado_en, actualizado_en')
+        .select('id, nombre, telefono, interes, estado, canal_origen, notas, etapa_kanban, fecha_cita, creado_en, actualizado_en')
         .order('actualizado_en', { ascending: false })
 
       const ETAPAS = ['Contacto', 'Propuesta', 'Negociación', 'Cerrado', 'No Interesado']
@@ -832,9 +826,8 @@ Si lo prefieres, puedes responderme por este chat y te atenderé personalmente. 
       const deals = (leads || []).map(l => {
         const ultimaActividad = new Date(l.actualizado_en || l.creado_en).getTime()
         const diasInactivo = Math.floor((ahora - ultimaActividad) / 86400000)
-        // Leer etapa Kanban guardada en notas, si no existe usar estado como fallback
-        const etapaEnNotas = (l.notas || '').match(/\[etapa:([^\]]+)\]/)?.[1]
-        const etapa = etapaEnNotas && ETAPAS.includes(etapaEnNotas) ? etapaEnNotas : 'Contacto'
+        // Usar columna etapa_kanban directamente — ya no se parsea desde notas
+        const etapa = ETAPAS.includes(l.etapa_kanban) ? l.etapa_kanban : 'Contacto'
         const valor = parseFloat((VALOR_POR_UNIDAD[l.interes] || 2800000).toFixed(2))
         return {
           ...l,
@@ -879,20 +872,16 @@ Si lo prefieres, puedes responderme por este chat y te atenderé personalmente. 
         const estadoDB = ESTADO_MAP[etapa] || 'En Conversación'
         const ts = new Date().toISOString()
 
-        // Guardar etapa kanban en notas para no perderla (sin romper constraints)
-        const { data: current } = await supabase.from('leads').select('nombre, notas').eq('id', id).single()
-        const notasBase = (current?.notas || '').replace(/\[etapa:[^\]]+\]/, '').trim()
-        const nuevasNotas = `[etapa:${etapa}] ${notasBase}`.trim()
-
+        // Actualizar columna etapa_kanban directamente — sin hack en notas
         const { data, error } = await supabase
           .from('leads')
-          .update({ estado: estadoDB, notas: nuevasNotas, actualizado_en: ts })
+          .update({ etapa_kanban: etapa, estado: estadoDB, actualizado_en: ts })
           .eq('id', id)
-          .select('id, nombre, estado, actualizado_en')
+          .select('id, nombre, estado, etapa_kanban, actualizado_en')
           .single()
         if (error) throw error
         console.log(`[STAGE] ${data.nombre} → ${etapa} (${estadoDB}) @ ${ts}`)
-        res.writeHead(200, JSON_H); res.end(JSON.stringify({ ...data, etapa }))
+        res.writeHead(200, JSON_H); res.end(JSON.stringify({ ...data, etapa: data.etapa_kanban }))
       } catch (e) {
         console.error('[STAGE]', e.message)
         res.writeHead(500, JSON_H); res.end(JSON.stringify({ error: e.message }))
