@@ -39,19 +39,19 @@ if (USA_IA) {
 const REGLAS = [
   {
     palabras: ['precio','costo','cuanto','vale','cuánto','valen','cuesta','cuánto cuesta','cuánto vale','cuál es el precio'],
-    respuesta: () => '🌟 *Penthouse Parque Chapultepec — Última unidad*\n\n$4,500,000 MXN\n\n• 336.83 m² totales\n• Rooftop privado 85 m² con jacuzzi, asador y pérgola\n• 3 suites con baño completo\n• Elevador directo · Vista panorámica de Cuernavaca\n\n¿Te agendo una visita esta semana?'
+    respuesta: () => '🌟 *Penthouse Parque Chapultepec — Última unidad*\n\n$4,500,000 MXN\n\n• 336.83 m² construcción\n• Rooftop privado · 3 recámaras\n• Elevador directo · Vista panorámica de Cuernavaca\n• Entrega inmediata'
   },
   {
     palabras: ['penthouse','ph ','ph,','suite','4.5','cuatro y medio','ultima unidad','última unidad'],
-    respuesta: () => '🌟 *Penthouse — última unidad disponible*\n\n• Área privativa: 234 m²\n• Roof Garden privado: 86 m² con jacuzzi, asador y pérgola\n• 3 recámaras + 3.5 baños de lujo\n• 2 cajones techados + 2 bodegas\n• Elevador exclusivo directo al departamento\n• Porcelanato de importación · Cancelería de aluminio y vidrio templado\n• ROI proyectado: 8-12% anual\n• $4,500,000 MXN · Entrega inmediata\n\n¿Te agendo tu visita esta semana?'
+    respuesta: () => '🌟 *Penthouse — última unidad disponible*\n\n• 336.83 m² construcción\n• Roof Garden privado\n• 3 recámaras\n• Elevador exclusivo directo al departamento\n• $4,500,000 MXN · Entrega inmediata'
   },
   {
     palabras: ['departamento','depa','2.8','dos recam','4to piso','cuarto piso','4° piso'],
-    respuesta: () => 'Solo tenemos disponible el *Penthouse* — última unidad del proyecto.\n\n🌟 $4,500,000 MXN · 336 m² · Rooftop con jacuzzi · 3 suites · Elevador privado\n\n¿Te interesa conocerlo?'
+    respuesta: () => 'Solo tenemos disponible el *Penthouse* — última unidad del proyecto.\n\n🌟 $4,500,000 MXN · 336.83 m² · Rooftop privado · 3 recámaras · Elevador directo'
   },
   {
-    palabras: ['rooftop','roof','jacuzzi','terraza','asador','pergola','pérgola','deck'],
-    respuesta: () => 'El rooftop del Penthouse es único en Cuernavaca 🌿\n\n• 85 m² privados — solo tuyo\n• Jacuzzi con vista panorámica a la ciudad\n• Asador BBQ y pérgola\n• Sala exterior y jardín\n\nEsto no se comparte con nadie. ¿Quieres conocerlo esta semana?'
+    palabras: ['rooftop','roof','terraza','asador','pergola','pérgola','deck'],
+    respuesta: () => 'El rooftop del Penthouse es privado y exclusivo 🌿\n\n• Espacio al aire libre solo para ti\n• Vista panorámica de Cuernavaca\n\n¿Quieres conocerlo esta semana?'
   },
   {
     palabras: ['alberca','piscina','pool','amenidades','amenidad','instalaciones'],
@@ -95,7 +95,7 @@ const REGLAS = [
   },
   {
     palabras: ['cuantos','cuántos','disponibles','quedan','unidades'],
-    respuesta: () => '⚠️ Solo queda *1 unidad* disponible.\n\n🌟 *Penthouse* — $4,500,000 MXN\n336 m² · Rooftop con jacuzzi · 3 suites · Elevador directo\n\n¿Agendamos tu visita?'
+    respuesta: () => '⚠️ Solo queda *1 unidad* disponible.\n\n🌟 *Penthouse* — $4,500,000 MXN\n336.83 m² · Rooftop privado · 3 recámaras · Elevador directo'
   },
   {
     palabras: ['entrega','listo','terminado','cuando entrega','cuándo entrega'],
@@ -111,7 +111,7 @@ const REGLAS = [
   },
   {
     palabras: ['hola','buenas','buenos','hi','hey','buen día','buenas tardes','buenas noches','good','saludos'],
-    respuesta: () => '¡Hola! Bienvenido a Parque Chapultepec 👋\n\nResidencial exclusivo en Cuernavaca — a 50m del parque, alberca climatizada, jardín tropical y elevador.\n\n🌟 *Solo queda 1 unidad disponible:*\nPenthouse · $4,500,000 MXN · 336 m² · Rooftop 85 m² con jacuzzi\n\n¿Te interesa conocerlo?'
+    respuesta: () => '¡Hola! Bienvenido a Parque Chapultepec 👋\n\nResidencial exclusivo en Cuernavaca — a 50m del parque, alberca, jardín tropical y elevador.\n\n🌟 *Solo queda 1 unidad disponible:*\nPenthouse · $4,500,000 MXN · 336.83 m² · Rooftop privado · 3 recámaras'
   },
 ]
 
@@ -119,7 +119,7 @@ const MENU = `🌟 *Parque Chapultepec — Cuernavaca*
 Residencial exclusivo · ⚠️ Solo 1 unidad disponible
 
 *PENTHOUSE* — $4,500,000 MXN
-336 m² · Rooftop 85 m² · Jacuzzi · 3 suites · Elevador privado
+336.83 m² · Rooftop privado · 3 recámaras · Elevador directo
 
 ¿Qué te gustaría conocer?
 
@@ -151,16 +151,15 @@ const SYSTEM_IA = `Eres Ana, asesora de Parque Chapultepec en Cuernavaca. Respon
 
 REGLAS:
 - Responde SOLO lo que te pregunten, en 1-2 líneas, sin markdown ni asteriscos
-- NUNCA agregues preguntas al final ni invites a agendar visita
+- NUNCA agregues preguntas al final
 - NUNCA inventes datos que no estén aquí abajo
 - NUNCA menciones el departamento de 4to piso — ya se vendió
+- PROHIBIDO mencionar: jacuzzi, alberca privada, bodega, domótica ni ninguna amenidad que no esté listada
 
 ÚNICA PROPIEDAD DISPONIBLE:
 Penthouse — $4,500,000 MXN
-336.83 m² construcción · Roofgarden privado con jacuzzi · 3 recámaras · Elevador directo · Entrega inmediata
-📍 Bajada de Chapultepec 18-A, Cuernavaca
-
-PROHIBIDO inventar: jacuzzi, alberca privada, bodega, domótica, ni ningún amenidad que no esté listada arriba.`
+336.83 m² construcción · Roofgarden privado · 3 recámaras · Elevador directo · Entrega inmediata
+📍 Bajada de Chapultepec 18-A, Cuernavaca`
 
 async function historialClaude(leadId) {
   const { data } = await supabase
@@ -204,7 +203,6 @@ A 50 metros del Parque Chapultepec · 1.5h de CDMX · 330 días de sol al año.
 
 🌟 *PENTHOUSE · $4,500,000 MXN*
 • 234 m² de residencia + 86 m² de Roof Garden privado
-• Jacuzzi privado con vista a las montañas de Morelos
 • Pérgola de parota, asador y sala al aire libre
 • 3 recámaras + 3.5 baños tipo spa · travertino y latón cepillado
 • Cocina abierta con isla de granito
@@ -464,7 +462,7 @@ async function iniciar() {
 Atendemos por WhatsApp para darte mejor servicio 🙏
 
 🌟 *Penthouse Parque Chapultepec — Última unidad*
-$4,500,000 MXN · Roof Garden con jacuzzi · 3 suites · Elevador directo · Vista panorámica · Cuernavaca
+$4,500,000 MXN · Roof Garden privado · 3 recámaras · Elevador directo · Vista panorámica · Cuernavaca
 
 Te mando las fotos ahora mismo 📸`
 
@@ -578,9 +576,12 @@ Te mando las fotos ahora mismo 📸`
         continue
       }
 
-      // ── Flujo principal: primera vez → secuencia completa; después → IA ──
-      if (!infoEnviada) {
-        // Primera interacción: enviar info + fotos del PH
+      // ── Flujo principal ───────────────────────────────────────────────────
+      // Pide info/fotos de nuevo → siempre re-enviar secuencia completa
+      const pideInfo = /informe|informaci[oó]n|foto|imagen|ver|manda|env[íi]a|muestra|precio|cu[aá]nto|cuanto|detalles|penthouse|disponible/i.test(texto)
+
+      if (!infoEnviada || pideInfo) {
+        // Enviar info completa + fotos del PH
         await send(MSG_INFO_COMPLETA)
         await new Promise(r => setTimeout(r, 1500))
         const ok = await enviarSecuencia(sock, jid, 'ph')
@@ -592,7 +593,7 @@ Te mando las fotos ahora mismo 📸`
           console.log(`📸 Secuencia PH enviada → ${telefono}`)
         }
       } else {
-        // Ya recibió la info → respuesta conversacional concisa (IA o reglas)
+        // Conversación normal — respuesta concisa sin inventar datos
         let respuesta
         try { respuesta = USA_IA ? await respuestaIA(leadId, texto) : respuestaReglas(texto) }
         catch { respuesta = respuestaReglas(texto) }
@@ -772,23 +773,18 @@ async function apiRouter(req, res) {
           return
         }
 
-        const MSG_FICHA_VAPI = `¡Hola! 🏢 Gracias por tu interés en nuestro Penthouse Exclusivo en Cuernavaca (a 50m del Parque Chapultepec).
+        const MSG_FICHA_VAPI = `¡Hola! 👋 Vi que intentaste llamarme. Atendemos por WhatsApp para darte mejor servicio 🙏
 
-Para darte una atención inmediata y que puedas revisar los detalles en alta definición, aquí tienes la información de la ÚLTIMA UNIDAD DISPONIBLE:
+🌟 *Penthouse Parque Chapultepec — Última unidad*
+📍 Bajada de Chapultepec 18-A, Cuernavaca
 
-💰 Precio Total: $4,500,000 MXN
-📐 Construcción Total: 336.83 m²
-📐 Área Privada: 117.45 m²
-🌿 Roofgarden Privado: 85.74 m²
-🛏️ Distribución: 3 Recámaras (cada una con su propio baño completo) y 3.5 baños totales
-🚗 Estacionamiento: 2 cajones techados
-🛗 Acceso: Elevador directo al departamento con espectacular vista panorámica
+💰 $4,500,000 MXN · Entrega inmediata
+📐 336.83 m² construcción
+🌿 Roofgarden privado
+🛏️ 3 recámaras
+🛗 Elevador directo al departamento
 
-📸 Ver Galería de Fotos y Ficha Técnica: https://parque-chapultepec.vercel.app
-📱 Síguenos en Instagram: https://www.instagram.com/pchapultepec
-📅 ¿Te gustaría conocerlo? Agenda una visita personalizada directamente aquí para elegir tu horario: https://parque-chapultepec.vercel.app
-
-Si lo prefieres, puedes responderme por este chat y te atenderé personalmente. ¡Quedamos a tus órdenes!`
+Te mando las fotos ahora mismo 📸`
 
         await sockActual.sendMessage(jid, { text: MSG_FICHA_VAPI })
         if (leadId) await log(leadId, 'Mensaje Saliente Bot', MSG_FICHA_VAPI, {
