@@ -612,6 +612,9 @@ tbody tr:hover td { background: #FAFBFC; }
     <button class="sb-refresh" onclick="cargar();cargarBuffer()">
       <span>↻</span> Actualizar datos
     </button>
+    <button id="btn-logout" class="sb-refresh" style="margin-top:6px;background:#FEF2F2;color:#DC2626;border-color:#FECACA;">
+      <span>⎋</span> Cerrar sesión
+    </button>
     <div class="sb-time" id="r-hora">—</div>
   </div>
 </aside>
@@ -929,6 +932,34 @@ tbody tr:hover td { background: #FAFBFC; }
 </div>
 
 <script>
+/* ══ AUTH ══ */
+// Interceptar fetch para inyectar x-crm-token en todas las llamadas /api
+const _fetchOrig = window.fetch.bind(window)
+window.fetch = (url, opts = {}) => {
+  const token = localStorage.getItem('crm_token')
+  if (token && typeof url === 'string' && url.includes('/api/')) {
+    opts = { ...opts, headers: { ...(opts.headers || {}), 'x-crm-token': token } }
+  }
+  return _fetchOrig(url, opts)
+}
+
+function iniciarApp() {
+  document.getElementById('login-overlay').style.display = 'none'
+  cargar()
+  cargarBuffer()
+  setInterval(cargar, 30000)
+  setInterval(cargarDeals, 60000)
+}
+
+function verificarAuth() {
+  const token = localStorage.getItem('crm_token')
+  if (!token) {
+    document.getElementById('login-overlay').style.display = 'flex'
+    return false
+  }
+  return true
+}
+
 /* ══ CONSTANTES ══ */
 const API = window.location.protocol === 'file:' ? 'http://localhost:3001' : ''
 const SB  = 'https://gnarxxwxagstuspkbvql.supabase.co/rest/v1'
@@ -1647,10 +1678,51 @@ function nav(id, el) {
 }
 
 /* ══ INIT ══ */
-cargar()
-cargarBuffer()
-setInterval(cargar, 30000)
-setInterval(cargarDeals, 60000)
+document.getElementById('login-form').addEventListener('submit', async e => {
+  e.preventDefault()
+  const pwd = document.getElementById('login-pwd').value.trim()
+  const r = await _fetchOrig(`${API}/api/auth`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password: pwd })
+  })
+  if (r.ok) {
+    const d = await r.json()
+    localStorage.setItem('crm_token', d.token)
+    iniciarApp()
+  } else {
+    document.getElementById('login-error').textContent = '❌ Contraseña incorrecta'
+    document.getElementById('login-pwd').value = ''
+    document.getElementById('login-pwd').focus()
+  }
+})
+
+document.getElementById('btn-logout').addEventListener('click', () => {
+  localStorage.removeItem('crm_token')
+  location.reload()
+})
+
+if (verificarAuth()) iniciarApp()
 </script>
+
+<!-- ══ LOGIN OVERLAY ══ -->
+<div id="login-overlay" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(15,23,42,.85);backdrop-filter:blur(6px);align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:16px;padding:40px 36px;width:340px;box-shadow:0 24px 64px rgba(0,0,0,.25);text-align:center;">
+    <div style="font-size:32px;margin-bottom:8px;">🏢</div>
+    <div style="font-size:18px;font-weight:800;color:#0F172A;margin-bottom:4px;">Chapultepec CRM</div>
+    <div style="font-size:12px;color:#94A3B8;margin-bottom:28px;">Parque Chapultepec · Cuernavaca</div>
+    <form id="login-form">
+      <input id="login-pwd" type="password" placeholder="Contraseña"
+        autofocus autocomplete="current-password"
+        style="width:100%;padding:10px 14px;border:1.5px solid #E2E8F0;border-radius:8px;font-size:14px;outline:none;margin-bottom:12px;transition:border .15s;"
+        onfocus="this.style.borderColor='#1D4ED8'" onblur="this.style.borderColor='#E2E8F0'">
+      <button type="submit"
+        style="width:100%;padding:10px;background:#1D4ED8;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;">
+        Entrar
+      </button>
+      <div id="login-error" style="margin-top:10px;font-size:12px;color:#DC2626;min-height:18px;"></div>
+    </form>
+  </div>
+</div>
 </body>
 </html>

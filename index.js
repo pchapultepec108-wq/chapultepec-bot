@@ -356,54 +356,7 @@ const MSG_RECORDATORIO_CITA = `Tienes tu visita agendada al *Penthouse Parque Ch
 let intentosReconexion = 0
 let sockActual = null  // referencia global para cerrar antes de reconectar
 
-// ── Auth state persistente en Supabase ───────────────────────────────────────
-// Reemplaza useMultiFileAuthState — sobrevive reinicios de Render
-async function useSupabaseAuthState() {
-  const { BufferJSON, initAuthCreds } = await import('@whiskeysockets/baileys')
-
-  async function readData(id) {
-    const { data } = await supabase.from('wa_session').select('data').eq('id', id).single()
-    if (!data) return null
-    return JSON.parse(JSON.stringify(data.data), BufferJSON.reviver)
-  }
-
-  async function writeData(id, value) {
-    const json = JSON.parse(JSON.stringify(value, BufferJSON.replacer))
-    await supabase.from('wa_session').upsert({ id, data: json, updated_at: new Date().toISOString() }, { onConflict: 'id' })
-  }
-
-  async function removeData(id) {
-    await supabase.from('wa_session').delete().eq('id', id)
-  }
-
-  const creds = await readData('creds') || initAuthCreds()
-
-  return {
-    state: {
-      creds,
-      keys: {
-        get: async (type, ids) => {
-          const result = {}
-          await Promise.all(ids.map(async id => {
-            const val = await readData(`${type}-${id}`)
-            if (val) result[id] = val
-          }))
-          return result
-        },
-        set: async (data) => {
-          await Promise.all(
-            Object.entries(data).flatMap(([type, entries]) =>
-              Object.entries(entries).map(([id, val]) =>
-                val ? writeData(`${type}-${id}`, val) : removeData(`${type}-${id}`)
-              )
-            )
-          )
-        }
-      }
-    },
-    saveCreds: () => writeData('creds', creds)
-  }
-}
+// useSupabaseAuthState eliminado — auth es local con useMultiFileAuthState('./auth_session')
 
 async function iniciar() {
   // Cerrar socket anterior antes de crear uno nuevo — evita el loop 440
@@ -656,6 +609,39 @@ const JSON_H = { 'Content-Type': 'application/json', 'Access-Control-Allow-Origi
 async function apiRouter(req, res) {
   const url = new URL(req.url, 'http://localhost')
   const path = url.pathname
+
+  // ── Autenticación CRM ────────────────────────────────────────────────────
+  // Rutas públicas: Vapi webhook (externo) y el endpoint de login
+  const RUTAS_PUBLICAS = new Set(['/api/llamada-entrante', '/api/auth'])
+  if (!RUTAS_PUBLICAS.has(path) && req.method !== 'OPTIONS') {
+    const token = req.headers['x-crm-token']
+    if (!token || token !== process.env.CRM_PASSWORD) {
+      res.writeHead(401, JSON_H)
+      res.end(JSON.stringify({ error: 'No autorizado' }))
+      return true
+    }
+  }
+
+  // POST /api/auth — validar contraseña y devolver token
+  if (path === '/api/auth' && req.method === 'POST') {
+    let body = ''
+    req.on('data', d => body += d)
+    req.on('end', () => {
+      try {
+        const { password } = JSON.parse(body || '{}')
+        if (password && password === process.env.CRM_PASSWORD) {
+          res.writeHead(200, JSON_H)
+          res.end(JSON.stringify({ ok: true, token: process.env.CRM_PASSWORD }))
+        } else {
+          res.writeHead(401, JSON_H)
+          res.end(JSON.stringify({ error: 'Contraseña incorrecta' }))
+        }
+      } catch {
+        res.writeHead(400, JSON_H); res.end(JSON.stringify({ error: 'Bad request' }))
+      }
+    })
+    return true
+  }
 
   // Buffer: obtener posts programados de todos los perfiles
   if (path === '/api/buffer-posts' && req.method === 'GET') {
@@ -1003,8 +989,8 @@ Si lo prefieres, puedes responderme por este chat y te atenderé personalmente. 
           method: 'POST',
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
           body: new URLSearchParams({
-            client_id:     'HukPuN1xSMpeRuaQzbEhK2UID8rD5LMe4HlHEgRHOLB',
-            client_secret: 'L-hgS4_Xe4_kx9duFXGUzQv43JAsYPvdNfIcyRamlvrG_Jm6rgl1oX9-p1UtasOYx_pw3RDklI73jWLOfz2LPg',
+            client_id:     process.env.BUFFER_CLIENT_ID,
+            client_secret: process.env.BUFFER_CLIENT_SECRET,
             redirect_uri:  'https://parque-chapultepec.vercel.app/callback',
             code,
             grant_type: 'authorization_code',
